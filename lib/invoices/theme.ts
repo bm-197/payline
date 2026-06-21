@@ -31,6 +31,9 @@ export const TEXT_SCALES = ["s", "m", "l"] as const;
 export const DENSITIES = ["compact", "normal", "roomy"] as const;
 export const LOGO_SIZES = ["s", "m", "l"] as const;
 export const LOGO_PLACEMENTS = ["left", "center"] as const;
+export const LOGO_SHAPES = ["square", "rounded", "circle"] as const;
+export const TABLE_STYLES = ["lines", "zebra", "bordered", "minimal"] as const;
+export const BACKGROUNDS = ["none", "blush", "sage", "peri"] as const;
 
 export type FontOption = (typeof FONT_OPTIONS)[number];
 export type TextScale = (typeof TEXT_SCALES)[number];
@@ -49,22 +52,49 @@ export const themeSchema = z.object({
   accentColor: hex,
   textScale: z.enum(TEXT_SCALES).default("m").catch("m"),
   density: z.enum(DENSITIES).default("normal").catch("normal"),
+  tableStyle: z.enum(TABLE_STYLES).default("lines").catch("lines"),
+  background: z.enum(BACKGROUNDS).default("none").catch("none"),
   logo: z
     .object({
       url: z.string().url().nullable().default(null).catch(null),
       size: z.enum(LOGO_SIZES).default("m").catch("m"),
       placement: z.enum(LOGO_PLACEMENTS).default("left").catch("left"),
+      shape: z.enum(LOGO_SHAPES).default("square").catch("square"),
     })
-    .default({ url: null, size: "m", placement: "left" })
-    .catch({ url: null, size: "m", placement: "left" }),
+    .default({ url: null, size: "m", placement: "left", shape: "square" })
+    .catch({ url: null, size: "m", placement: "left", shape: "square" }),
   footer: z.string().max(300).default("").catch(""),
+  payment: z.string().max(500).default("").catch(""),
+  paid: z
+    .object({
+      title: z.string().max(60).default("Paid in full.").catch("Paid in full."),
+      note: z.string().max(120).default("Thank you.").catch("Thank you."),
+      tint: z.enum(BACKGROUNDS).default("sage").catch("sage"),
+    })
+    .default({ title: "Paid in full.", note: "Thank you.", tint: "sage" })
+    .catch({ title: "Paid in full.", note: "Thank you.", tint: "sage" }),
   fields: z
     .object({
       showDueDate: z.boolean().default(true).catch(true),
       showNotes: z.boolean().default(true).catch(true),
+      showQty: z.boolean().default(true).catch(true),
+      showUnit: z.boolean().default(true).catch(true),
+      showTaxDiscount: z.boolean().default(true).catch(true),
     })
-    .default({ showDueDate: true, showNotes: true })
-    .catch({ showDueDate: true, showNotes: true }),
+    .default({
+      showDueDate: true,
+      showNotes: true,
+      showQty: true,
+      showUnit: true,
+      showTaxDiscount: true,
+    })
+    .catch({
+      showDueDate: true,
+      showNotes: true,
+      showQty: true,
+      showUnit: true,
+      showTaxDiscount: true,
+    }),
 });
 
 export type InvoiceTheme = z.infer<typeof themeSchema>;
@@ -103,4 +133,32 @@ export function baseFontPx(scale: TextScale): number {
 /** Spacing multiplier applied to the document's padding/margins. */
 export function densityScale(density: Density): number {
   return density === "compact" ? 0.8 : density === "roomy" ? 1.25 : 1;
+}
+
+/** Glass utility class for a pastel tint (DOM); "none" gets a plain border instead. */
+export function paidTintClass(tint: InvoiceTheme["paid"]["tint"]): string {
+  switch (tint) {
+    case "blush":
+      return "glass-blush";
+    case "sage":
+      return "glass-sage";
+    case "peri":
+      return "glass-peri";
+    default:
+      return "border border-line";
+  }
+}
+
+/** Solid hex for a background tint (used by the PDF; null = no tint). */
+export function backgroundHex(background: InvoiceTheme["background"]): string | null {
+  switch (background) {
+    case "blush":
+      return "#f6e8e7";
+    case "sage":
+      return "#e9efe8";
+    case "peri":
+      return "#e8ecf5";
+    default:
+      return null;
+  }
 }

@@ -106,6 +106,28 @@ body {
   transform: translateY(-2px);
 }
 
+/* Thin, subtle scrollbar (visible thumb, no chunky track). */
+@utility thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(25, 25, 29, 0.22) transparent;
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(25, 25, 29, 0.22);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(25, 25, 29, 0.38);
+  }
+}
+
 /* Gradient-ink heading: clip a dark gradient to the text. Comfortable line-height
    and bottom padding so italic serif descenders never clip. */
 @utility ink-gradient {

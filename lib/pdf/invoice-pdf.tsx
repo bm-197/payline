@@ -1,7 +1,14 @@
-import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import path from "node:path";
+import { Document, Image, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { BusinessProfile, Client, Invoice, LineItem } from "@/lib/db/schema";
 import { formatDate } from "@/lib/format";
-import { baseFontPx, densityScale, type InvoiceTheme, parseTheme } from "@/lib/invoices/theme";
+import {
+  backgroundHex,
+  baseFontPx,
+  densityScale,
+  type InvoiceTheme,
+  parseTheme,
+} from "@/lib/invoices/theme";
 import { formatMoney, formatQuantity } from "@/lib/money";
 import { pdfFontFamily, registerPdfFonts } from "./fonts";
 
@@ -12,15 +19,24 @@ const muted = "#626275";
 const faint = "#898b91";
 const line = "#e7e9ef";
 
+const PAYLINE_LOGO = path.join(process.cwd(), "public/logo.png");
+
 // Styles scale with the theme's text size + density so the PDF tracks the page.
 function makeStyles(theme: InvoiceTheme) {
   const f = baseFontPx(theme.textScale) / 14;
   const d = densityScale(theme.density);
   const fs = (px: number) => Math.round(px * f);
   const sp = (px: number) => Math.round(px * d);
+  const ts = theme.tableStyle;
+  const rowBorderW = ts === "lines" || ts === "bordered" ? 1 : 0;
+  const headBorderW = ts === "minimal" ? 0 : 1;
+  const cellPad = ts === "bordered" ? 4 : 0;
+  const cellBorder =
+    ts === "bordered" ? { borderRightWidth: 1, borderColor: line, paddingHorizontal: 4 } : {};
   return StyleSheet.create({
     page: { padding: sp(40), fontSize: fs(10), color: ink },
     headerRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: sp(28) },
+    headerCenter: { alignItems: "center", marginBottom: sp(28) },
     business: { fontSize: fs(15), fontWeight: "bold" },
     address: { color: muted, fontSize: fs(8), marginTop: 4, lineHeight: 1.4 },
     number: { fontSize: fs(11), fontWeight: "bold", textAlign: "right" },
@@ -28,25 +44,33 @@ function makeStyles(theme: InvoiceTheme) {
     metaRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: sp(24) },
     label: { color: faint, fontSize: fs(8), marginBottom: 2 },
     strong: { fontWeight: "bold" },
+    tableWrap: ts === "bordered" ? { borderWidth: 1, borderColor: line } : {},
     tableHead: {
       flexDirection: "row",
-      borderBottomWidth: 1,
+      borderBottomWidth: headBorderW,
       borderBottomColor: line,
       paddingBottom: 6,
+      paddingHorizontal: cellPad,
       color: faint,
       fontSize: fs(8),
       textTransform: "uppercase",
     },
     row: {
       flexDirection: "row",
-      borderBottomWidth: 1,
+      borderBottomWidth: rowBorderW,
       borderBottomColor: line,
       paddingVertical: sp(7),
+      paddingHorizontal: cellPad,
     },
-    cDesc: { flex: 1 },
-    cQty: { width: 60, textAlign: "right" },
-    cUnit: { width: 80, textAlign: "right" },
-    cAmount: { width: 80, textAlign: "right" },
+    rowZebra: { backgroundColor: "#f3f4f7" },
+    cDesc: { flex: 1, ...cellBorder },
+    cQty: { width: 60, textAlign: "right", ...cellBorder },
+    cUnit: { width: 80, textAlign: "right", ...cellBorder },
+    cAmount: {
+      width: 80,
+      textAlign: "right",
+      ...(ts === "bordered" ? { paddingHorizontal: 4 } : {}),
+    },
     totals: { marginTop: sp(18), marginLeft: "auto", width: 200 },
     totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
     grand: { borderTopWidth: 1, borderTopColor: line, marginTop: 4, paddingTop: 6 },
@@ -57,7 +81,16 @@ function makeStyles(theme: InvoiceTheme) {
       borderTopColor: line,
       paddingTop: 10,
     },
-    paid: { marginTop: sp(24), color: "#4a6b4c", fontWeight: "bold" },
+    payment: {
+      marginTop: sp(24),
+      borderTopWidth: 1,
+      borderTopColor: line,
+      paddingTop: 10,
+    },
+    paymentLabel: { color: faint, fontSize: fs(8), marginBottom: 3, textTransform: "uppercase" },
+    paidBox: { marginTop: sp(24), borderRadius: 12, padding: sp(14), alignItems: "center" },
+    paidTitle: { fontSize: fs(13), fontWeight: "bold" },
+    paidNote: { fontSize: fs(9), color: muted, marginTop: 3 },
     brandRule: { width: 28, height: 2.5, borderRadius: 2, marginTop: 5 },
     footer: {
       marginTop: sp(32),
@@ -68,6 +101,8 @@ function makeStyles(theme: InvoiceTheme) {
       color: faint,
     },
     footerNote: { color: muted, marginBottom: 4 },
+    poweredRow: { flexDirection: "row", alignItems: "center" },
+    poweredLogo: { width: fs(11), height: fs(11), marginRight: 4 },
     businessMinimal: { fontSize: fs(13) },
     boldBanner: {
       marginTop: -sp(40),
@@ -106,39 +141,86 @@ export function InvoiceDocument({ invoice, lines, client, business }: Data) {
   const brand = theme.accentColor;
   const fontFamily = pdfFontFamily(theme.font);
   const styles = makeStyles(theme);
+  const bg = backgroundHex(theme.background);
+  const paidBg = backgroundHex(theme.paid.tint);
+  const zebra = theme.tableStyle === "zebra";
+  const centered = theme.logo.placement === "center";
+  const logoPx = { s: 28, m: 40, l: 56 }[theme.logo.size];
+  const logoEl = theme.logo.url ? (
+    theme.logo.shape === "square" ? (
+      <Image src={theme.logo.url} style={{ height: logoPx, marginBottom: 6 }} />
+    ) : (
+      <View
+        style={{
+          width: logoPx,
+          height: logoPx,
+          marginBottom: 6,
+          borderRadius: theme.logo.shape === "circle" ? logoPx / 2 : 6,
+          overflow: "hidden",
+        }}
+      >
+        <Image src={theme.logo.url} style={{ width: logoPx, height: logoPx, objectFit: "cover" }} />
+      </View>
+    )
+  ) : null;
   return (
     <Document title={invoice.number}>
-      <Page size="A4" style={[styles.page, { fontFamily }]}>
+      <Page size="A4" style={[styles.page, { fontFamily }, bg ? { backgroundColor: bg } : {}]}>
         {theme.layout === "bold" ? (
-          <View style={[styles.boldBanner, { backgroundColor: brand }]}>
-            <View>
-              <Text style={styles.boldName}>{business?.businessName ?? "Invoice"}</Text>
+          <View
+            style={[
+              styles.boldBanner,
+              { backgroundColor: brand },
+              centered ? { flexDirection: "column", alignItems: "center" } : {},
+            ]}
+          >
+            <View style={centered ? { alignItems: "center" } : {}}>
+              {logoEl}
+              <Text style={[styles.boldName, centered ? { textAlign: "center" } : {}]}>
+                {business?.businessName ?? "Invoice"}
+              </Text>
               {business?.address ? (
-                <Text style={styles.boldAddress}>{business.address}</Text>
+                <Text style={[styles.boldAddress, centered ? { textAlign: "center" } : {}]}>
+                  {business.address}
+                </Text>
               ) : null}
             </View>
-            <View>
-              <Text style={styles.boldNumber}>{`Inv #${invoice.number}`}</Text>
-              <Text style={styles.boldStatus}>
+            <View style={centered ? { alignItems: "center", marginTop: 8 } : {}}>
+              <Text style={[styles.boldNumber, centered ? { textAlign: "center" } : {}]}>
+                {`Inv #${invoice.number}`}
+              </Text>
+              <Text style={[styles.boldStatus, centered ? { textAlign: "center" } : {}]}>
                 {statusLabels[invoice.status] ?? invoice.status}
               </Text>
             </View>
           </View>
         ) : (
-          <View style={styles.headerRow}>
-            <View>
+          <View style={centered ? styles.headerCenter : styles.headerRow}>
+            <View style={centered ? { alignItems: "center" } : {}}>
+              {logoEl}
               <Text style={theme.layout === "minimal" ? styles.businessMinimal : styles.business}>
                 {business?.businessName ?? "Invoice"}
               </Text>
               {theme.layout === "classic" ? (
-                <View style={[styles.brandRule, { backgroundColor: brand }]} />
+                <View
+                  style={[
+                    styles.brandRule,
+                    { backgroundColor: brand },
+                    centered ? { alignSelf: "center" } : {},
+                  ]}
+                />
               ) : null}
-              {business?.address ? <Text style={styles.address}>{business.address}</Text> : null}
+              {business?.address ? (
+                <Text style={[styles.address, centered ? { textAlign: "center" } : {}]}>
+                  {business.address}
+                </Text>
+              ) : null}
             </View>
-            <View>
+            <View style={centered ? { alignItems: "center", marginTop: 8 } : {}}>
               <Text
                 style={[
                   styles.number,
+                  centered ? { textAlign: "center" } : {},
                   theme.layout === "classic"
                     ? { color: brand }
                     : theme.layout === "minimal"
@@ -148,7 +230,9 @@ export function InvoiceDocument({ invoice, lines, client, business }: Data) {
               >
                 {`Inv #${invoice.number}`}
               </Text>
-              <Text style={styles.status}>{statusLabels[invoice.status] ?? invoice.status}</Text>
+              <Text style={[styles.status, centered ? { textAlign: "center" } : {}]}>
+                {statusLabels[invoice.status] ?? invoice.status}
+              </Text>
             </View>
           </View>
         )}
@@ -172,33 +256,42 @@ export function InvoiceDocument({ invoice, lines, client, business }: Data) {
           </View>
         </View>
 
-        <View style={styles.tableHead}>
-          <Text style={styles.cDesc}>Description</Text>
-          <Text style={styles.cQty}>Qty</Text>
-          <Text style={styles.cUnit}>Unit</Text>
-          <Text style={styles.cAmount}>Amount</Text>
-        </View>
-        {lines.map((l) => (
-          <View style={styles.row} key={l.id}>
-            <Text style={styles.cDesc}>{l.description}</Text>
-            <Text style={styles.cQty}>{formatQuantity(l.quantity)}</Text>
-            <Text style={styles.cUnit}>{formatMoney(l.unitAmount, c)}</Text>
-            <Text style={styles.cAmount}>{formatMoney(l.amount, c)}</Text>
+        <View style={styles.tableWrap}>
+          <View style={styles.tableHead}>
+            <Text style={styles.cDesc}>Description</Text>
+            {theme.fields.showQty ? <Text style={styles.cQty}>Qty</Text> : null}
+            {theme.fields.showUnit ? <Text style={styles.cUnit}>Unit</Text> : null}
+            <Text style={styles.cAmount}>Amount</Text>
           </View>
-        ))}
+          {lines.map((l, i) => (
+            <View
+              style={zebra && i % 2 === 1 ? [styles.row, styles.rowZebra] : styles.row}
+              key={l.id}
+            >
+              <Text style={styles.cDesc}>{l.description}</Text>
+              {theme.fields.showQty ? (
+                <Text style={styles.cQty}>{formatQuantity(l.quantity)}</Text>
+              ) : null}
+              {theme.fields.showUnit ? (
+                <Text style={styles.cUnit}>{formatMoney(l.unitAmount, c)}</Text>
+              ) : null}
+              <Text style={styles.cAmount}>{formatMoney(l.amount, c)}</Text>
+            </View>
+          ))}
+        </View>
 
         <View style={styles.totals}>
           <View style={styles.totalRow}>
             <Text style={{ color: muted }}>Subtotal</Text>
             <Text>{formatMoney(invoice.subtotal, c)}</Text>
           </View>
-          {invoice.discount > 0 ? (
+          {theme.fields.showTaxDiscount && invoice.discount > 0 ? (
             <View style={styles.totalRow}>
               <Text style={{ color: muted }}>Discount</Text>
               <Text>-{formatMoney(invoice.discount, c)}</Text>
             </View>
           ) : null}
-          {invoice.taxTotal > 0 ? (
+          {theme.fields.showTaxDiscount && invoice.taxTotal > 0 ? (
             <View style={styles.totalRow}>
               <Text style={{ color: muted }}>Tax</Text>
               <Text>{formatMoney(invoice.taxTotal, c)}</Text>
@@ -213,11 +306,30 @@ export function InvoiceDocument({ invoice, lines, client, business }: Data) {
         {theme.fields.showNotes && invoice.notes ? (
           <Text style={styles.notes}>{invoice.notes}</Text>
         ) : null}
-        {invoice.status === "paid" ? <Text style={styles.paid}>PAID IN FULL</Text> : null}
+        {theme.payment ? (
+          <View style={styles.payment}>
+            <Text style={styles.paymentLabel}>Payment details</Text>
+            <Text>{theme.payment}</Text>
+          </View>
+        ) : null}
+        {invoice.status === "paid" ? (
+          <View
+            style={[
+              styles.paidBox,
+              paidBg ? { backgroundColor: paidBg } : { borderWidth: 1, borderColor: line },
+            ]}
+          >
+            <Text style={styles.paidTitle}>{theme.paid.title}</Text>
+            {theme.paid.note ? <Text style={styles.paidNote}>{theme.paid.note}</Text> : null}
+          </View>
+        ) : null}
 
         <View style={styles.footer}>
           {theme.footer ? <Text style={styles.footerNote}>{theme.footer}</Text> : null}
-          <Text>Powered by Payline</Text>
+          <View style={styles.poweredRow}>
+            <Image src={PAYLINE_LOGO} style={styles.poweredLogo} />
+            <Text>Powered by Payline</Text>
+          </View>
         </View>
       </Page>
     </Document>

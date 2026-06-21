@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { StatusChip } from "@/components/ui/chip";
 import { Logo } from "@/components/ui/logo";
 import { MoneyText } from "@/components/ui/money-text";
+import { cn } from "@/lib/cn";
 import { formatDate } from "@/lib/format";
 import type { DisplayStatus } from "@/lib/invoices/state";
 import { baseFontPx, densityScale, fontCss, type InvoiceTheme } from "@/lib/invoices/theme";
@@ -71,20 +72,50 @@ export function InvoiceView({
   };
 
   const businessName = business?.businessName ?? "Invoice";
+  const logoSize = logoHeight[theme.logo.size];
   const logo = theme.logo.url ? (
-    // biome-ignore lint/performance/noImgElement: arbitrary user URL, not a bundled asset
-    <img
-      src={theme.logo.url}
-      alt={businessName}
-      style={{ height: logoHeight[theme.logo.size] }}
-      className="w-auto object-contain"
-    />
+    theme.logo.shape === "square" ? (
+      // biome-ignore lint/performance/noImgElement: arbitrary user URL, not a bundled asset
+      <img
+        src={theme.logo.url}
+        alt={businessName}
+        style={{ height: logoSize }}
+        className="w-auto object-contain"
+      />
+    ) : (
+      <span
+        className={cn(
+          "inline-block overflow-hidden",
+          theme.logo.shape === "circle" ? "rounded-full" : "rounded-lg",
+        )}
+        style={{ width: logoSize, height: logoSize }}
+      >
+        {/* biome-ignore lint/performance/noImgElement: arbitrary user URL, not a bundled asset */}
+        <img src={theme.logo.url} alt={businessName} className="size-full object-cover" />
+      </span>
+    )
   ) : null;
 
   const centered = theme.logo.placement === "center";
 
+  const ts = theme.tableStyle;
+  const bordered = ts === "bordered";
+  const zebra = ts === "zebra";
+  const headClass =
+    ts === "minimal" ? "" : bordered ? "border-b-2 border-line" : "border-b border-line";
+  const rowBorder = ts === "minimal" || zebra ? "" : "border-b border-line/70 last:border-0";
+  const { showQty, showUnit } = theme.fields;
+  const glassClass =
+    theme.background === "blush"
+      ? "glass-blush"
+      : theme.background === "sage"
+        ? "glass-sage"
+        : theme.background === "peri"
+          ? "glass-peri"
+          : "glass";
+
   return (
-    <div className="glass overflow-hidden rounded-3xl" style={rootStyle}>
+    <div className={cn(glassClass, "overflow-hidden rounded-3xl")} style={rootStyle}>
       {theme.layout === "bold" ? (
         <div
           style={{ backgroundColor: theme.accentColor, padding: pad }}
@@ -143,31 +174,70 @@ export function InvoiceView({
         </div>
 
         <div className="overflow-x-auto" style={{ marginTop: pad }}>
-          <table className="w-full">
+          <table className={cn("w-full", bordered && "border border-line")}>
             <thead>
               <tr
-                className="border-b border-line text-left font-geist uppercase tracking-wide text-faint"
+                className={cn("text-left font-geist uppercase tracking-wide text-faint", headClass)}
                 style={{ fontSize: "0.72em" }}
               >
-                <th className="py-2 pr-4 font-medium">Description</th>
-                <th className="px-2 py-2 text-right font-medium">Qty</th>
-                <th className="px-2 py-2 text-right font-medium">Unit</th>
-                <th className="py-2 pl-2 text-right font-medium">Amount</th>
+                <th className={cn("py-2 pr-4 font-medium", bordered && "border border-line px-3")}>
+                  Description
+                </th>
+                {showQty ? (
+                  <th
+                    className={cn(
+                      "px-2 py-2 text-right font-medium",
+                      bordered && "border border-line",
+                    )}
+                  >
+                    Qty
+                  </th>
+                ) : null}
+                {showUnit ? (
+                  <th
+                    className={cn(
+                      "px-2 py-2 text-right font-medium",
+                      bordered && "border border-line",
+                    )}
+                  >
+                    Unit
+                  </th>
+                ) : null}
+                <th
+                  className={cn(
+                    "py-2 pl-2 text-right font-medium",
+                    bordered && "border border-line px-3",
+                  )}
+                >
+                  Amount
+                </th>
               </tr>
             </thead>
             <tbody>
-              {lines.map((l) => (
-                <tr key={l.id} className="border-b border-line/70 last:border-0">
-                  <td className="pr-4" style={{ paddingTop: rowGap, paddingBottom: rowGap }}>
+              {lines.map((l, i) => (
+                <tr key={l.id} className={cn(rowBorder, zebra && i % 2 === 1 && "bg-line/25")}>
+                  <td
+                    className={cn("pr-4", bordered && "border border-line px-3")}
+                    style={{ paddingTop: rowGap, paddingBottom: rowGap }}
+                  >
                     {l.description}
                   </td>
-                  <td className="px-2 text-right font-geist tabular-nums">
-                    {formatQuantity(l.quantity)}
-                  </td>
-                  <td className="px-2 text-right">
-                    <MoneyText>{formatMoney(l.unitAmount, inv.currency)}</MoneyText>
-                  </td>
-                  <td className="pl-2 text-right">
+                  {showQty ? (
+                    <td
+                      className={cn(
+                        "px-2 text-right font-geist tabular-nums",
+                        bordered && "border border-line",
+                      )}
+                    >
+                      {formatQuantity(l.quantity)}
+                    </td>
+                  ) : null}
+                  {showUnit ? (
+                    <td className={cn("px-2 text-right", bordered && "border border-line")}>
+                      <MoneyText>{formatMoney(l.unitAmount, inv.currency)}</MoneyText>
+                    </td>
+                  ) : null}
+                  <td className={cn("pl-2 text-right", bordered && "border border-line px-3")}>
                     <MoneyText>{formatMoney(l.amount, inv.currency)}</MoneyText>
                   </td>
                 </tr>
@@ -180,12 +250,12 @@ export function InvoiceView({
           <Row label="Subtotal">
             <MoneyText>{formatMoney(inv.subtotal, inv.currency)}</MoneyText>
           </Row>
-          {inv.discount > 0 ? (
+          {theme.fields.showTaxDiscount && inv.discount > 0 ? (
             <Row label="Discount">
               <MoneyText>-{formatMoney(inv.discount, inv.currency)}</MoneyText>
             </Row>
           ) : null}
-          {inv.taxTotal > 0 ? (
+          {theme.fields.showTaxDiscount && inv.taxTotal > 0 ? (
             <Row label="Tax">
               <MoneyText>{formatMoney(inv.taxTotal, inv.currency)}</MoneyText>
             </Row>
@@ -209,6 +279,15 @@ export function InvoiceView({
           >
             {inv.notes}
           </p>
+        ) : null}
+
+        {theme.payment ? (
+          <div className="border-t border-line" style={{ marginTop: pad, paddingTop: 16 }}>
+            <p className="text-faint" style={{ fontSize: "0.78em" }}>
+              Payment details
+            </p>
+            <p className="mt-1 whitespace-pre-wrap text-muted">{theme.payment}</p>
+          </div>
         ) : null}
 
         {paymentSlot ? <div style={{ marginTop: pad }}>{paymentSlot}</div> : null}

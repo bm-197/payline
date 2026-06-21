@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import { InvoiceView } from "@/components/invoices/invoice-view";
 import { PayButton } from "@/components/invoices/pay-button";
+import { cn } from "@/lib/cn";
 import { formatDate } from "@/lib/format";
 import { loadPublicInvoice } from "@/lib/invoices/public";
 import { displayStatus } from "@/lib/invoices/state";
-import { parseTheme } from "@/lib/invoices/theme";
+import { paidTintClass, parseTheme } from "@/lib/invoices/theme";
 import { formatMoney } from "@/lib/money";
 
 export default async function PublicInvoicePage({
@@ -27,10 +28,10 @@ export default async function PublicInvoicePage({
 
   const paymentSlot =
     inv.status === "paid" ? (
-      <div className="glass-sage rounded-2xl px-5 py-4 text-center">
-        <p className="font-serif text-lg italic">Paid in full.</p>
+      <div className={cn(paidTintClass(theme.paid.tint), "rounded-2xl px-5 py-4 text-center")}>
+        <p className="font-serif text-lg italic">{theme.paid.title}</p>
         <p className="mt-1 text-sm text-muted">
-          {inv.paidAt ? `Settled ${formatDate(inv.paidAt)}. Thank you.` : "Thank you."}
+          {inv.paidAt ? `Settled ${formatDate(inv.paidAt)}. ${theme.paid.note}` : theme.paid.note}
         </p>
       </div>
     ) : inv.status === "void" ? (
