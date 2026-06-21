@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: payline-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: payline
+      POSTGRES_PASSWORD: payline
+      POSTGRES_DB: payline
+    ports:
+      # Host 5433 to avoid colliding with other local Postgres instances.
+      - "5433:5432"
+    volumes:
+      - payline-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payline -d payline"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  payline-pgdata:

@@ -1,0 +1,36 @@
+# dependencies
+/node_modules
+.pnp
+.pnp.js
+
+# next
+/.next/
+/out/
+next-env.d.ts
+
+# production
+/build
+
+# env
+.env
+.env*.local
+
+# debug
+npm-debug.log*
+pnpm-debug.log*
+
+# os / editor
+.DS_Store
+*.pem
+.vscode/
+.idea/
+
+# test
+/coverage
+
+# typescript
+*.tsbuildinfo
+
+# AI/process docs are intentionally kept outside this repo (in the parent folder)
+CLAUDE.md
+DECISIONS.md
