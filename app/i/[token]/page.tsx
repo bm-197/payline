@@ -36,6 +36,9 @@ export default async function PublicInvoicePage({
 
       <div className="mx-auto w-full max-w-2xl">
         <div className="glass overflow-hidden rounded-3xl">
+          {business?.brandColor ? (
+            <div style={{ backgroundColor: business.brandColor }} className="h-1.5 w-full" />
+          ) : null}
           {/* Branded header */}
           <div className="flex items-start justify-between gap-4 border-b border-white/40 p-7">
             <div>
@@ -168,10 +171,20 @@ export default async function PublicInvoicePage({
                       Checkout canceled. You can try again whenever you're ready.
                     </p>
                   ) : null}
-                  <PayButton token={token} amountLabel={formatMoney(inv.total, inv.currency)} />
+                  <PayButton
+                    token={token}
+                    amountLabel={formatMoney(inv.total, inv.currency)}
+                    brandColor={business?.brandColor}
+                  />
                 </div>
               )}
             </div>
+
+            {business?.invoiceFooter ? (
+              <p className="mt-6 border-t border-line pt-4 text-center text-sm text-muted">
+                {business.invoiceFooter}
+              </p>
+            ) : null}
 
             <div className="mt-6 flex items-center justify-between text-xs text-faint">
               <a href={`/i/${token}/pdf`} className="underline-offset-4 hover:underline">

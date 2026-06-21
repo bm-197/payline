@@ -90,18 +90,32 @@ export async function createDraftInvoiceAction(
     });
     if (!profile) throw new Error("Missing business profile.");
 
-    const seq = profile.nextInvoiceSeq;
+    const cust = await tx.query.client.findFirst({
+      where: and(eq(client.id, data.clientId), eq(client.userId, user.id)),
+    });
+    if (!cust) throw new Error("Client not found.");
+
+    const customerNumber = cust.customerNumber ?? profile.nextClientSeq;
+    if (cust.customerNumber == null) {
+      await tx
+        .update(businessProfile)
+        .set({ nextClientSeq: customerNumber + 1 })
+        .where(eq(businessProfile.userId, user.id));
+    }
+    const seq = cust.nextInvoiceSeq;
     await tx
-      .update(businessProfile)
-      .set({ nextInvoiceSeq: seq + 1 })
-      .where(eq(businessProfile.userId, user.id));
+      .update(client)
+      .set({ customerNumber, nextInvoiceSeq: seq + 1 })
+      .where(eq(client.id, cust.id));
+
+    const number = formatInvoiceNumber(customerNumber, data.issueDate, seq);
 
     const id = newId("invoice");
     await tx.insert(invoice).values({
       id,
       userId: user.id,
       clientId: data.clientId,
-      number: formatInvoiceNumber(profile.invoiceNumberPrefix, seq),
+      number,
       currency: data.currency,
       status: "draft",
       issueDate: data.issueDate,

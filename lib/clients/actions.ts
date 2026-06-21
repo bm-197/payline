@@ -7,7 +7,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
-import { client } from "@/lib/db/schema";
+import { businessProfile, client } from "@/lib/db/schema";
 
 export type ClientFormState = { error?: string };
 
@@ -49,10 +49,23 @@ export async function createClientAction(
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
   }
 
-  await db.insert(client).values({
-    id: newId("client"),
-    userId: user.id,
-    ...toValues(parsed.data),
+  await db.transaction(async (tx) => {
+    const profile = await tx.query.businessProfile.findFirst({
+      where: eq(businessProfile.userId, user.id),
+    });
+    const customerNumber = profile?.nextClientSeq ?? 1001;
+    if (profile) {
+      await tx
+        .update(businessProfile)
+        .set({ nextClientSeq: customerNumber + 1 })
+        .where(eq(businessProfile.userId, user.id));
+    }
+    await tx.insert(client).values({
+      id: newId("client"),
+      userId: user.id,
+      customerNumber,
+      ...toValues(parsed.data),
+    });
   });
 
   revalidatePath("/clients");

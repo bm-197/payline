@@ -1,11 +1,13 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/form";
 import { cn } from "@/lib/cn";
 import { SUPPORTED_CURRENCIES } from "@/lib/money/currency";
 import type { SettingsState } from "@/lib/settings/actions";
+
+const BRAND_COLORS = ["#19191d", "#1a73e8", "#15803d", "#7c3aed", "#be123c", "#b45309"];
 
 const OFFSETS: { value: number; label: string }[] = [
   { value: -7, label: "7 days before" },
@@ -22,6 +24,8 @@ type Defaults = {
   businessName: string;
   address: string | null;
   logoUrl: string | null;
+  brandColor: string | null;
+  invoiceFooter: string | null;
   defaultCurrency: string;
   taxRate: string;
   paymentTermsDays: number;
@@ -36,6 +40,7 @@ export function SettingsForm({
   defaults: Defaults;
 }) {
   const [state, formAction, pending] = useActionState<SettingsState, FormData>(action, {});
+  const [brandColor, setBrandColor] = useState(defaults.brandColor ?? "");
 
   return (
     <form action={formAction} className="space-y-8">
@@ -96,6 +101,65 @@ export function SettingsForm({
             />
           </Field>
         </div>
+      </section>
+
+      <section className="space-y-5 rounded-3xl border border-line bg-card p-6">
+        <div>
+          <h2 className="text-sm font-medium">Invoice branding</h2>
+          <p className="mt-1 text-sm text-muted">
+            How your hosted invoice and PDF look to your client.
+          </p>
+        </div>
+        <input type="hidden" name="brandColor" value={brandColor} />
+        <Field label="Brand color" hint="Used for the Pay button and accents.">
+          <div className="flex flex-wrap items-center gap-2">
+            {BRAND_COLORS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-label={`Use ${c}`}
+                onClick={() => setBrandColor(c)}
+                style={{ backgroundColor: c }}
+                className={cn(
+                  "size-8 rounded-full transition",
+                  brandColor.toLowerCase() === c
+                    ? "ring-2 ring-ink ring-offset-2 ring-offset-card"
+                    : "ring-1 ring-line",
+                )}
+              />
+            ))}
+            <label className="ml-1 inline-flex cursor-pointer items-center gap-2 text-sm text-muted">
+              <input
+                type="color"
+                value={brandColor || "#19191d"}
+                onChange={(e) => setBrandColor(e.target.value)}
+                className="size-8 cursor-pointer rounded-full border border-line bg-transparent p-0.5"
+              />
+              Custom
+            </label>
+            {brandColor ? (
+              <button
+                type="button"
+                onClick={() => setBrandColor("")}
+                className="ml-1 text-sm text-faint transition hover:text-ink"
+              >
+                Reset
+              </button>
+            ) : null}
+          </div>
+        </Field>
+        <Field
+          label="Invoice footer"
+          htmlFor="invoiceFooter"
+          hint="A line shown at the foot of every invoice. Payment terms, a thank-you, bank details."
+        >
+          <Textarea
+            id="invoiceFooter"
+            name="invoiceFooter"
+            defaultValue={defaults.invoiceFooter ?? ""}
+            maxLength={300}
+          />
+        </Field>
       </section>
 
       <section className="space-y-4 rounded-3xl border border-line bg-card p-6">

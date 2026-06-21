@@ -38,6 +38,8 @@ export default async function SettingsPage() {
           businessName: profile?.businessName ?? "",
           address: profile?.address ?? "",
           logoUrl: profile?.logoUrl ?? "",
+          brandColor: profile?.brandColor ?? "",
+          invoiceFooter: profile?.invoiceFooter ?? "",
           defaultCurrency: profile?.defaultCurrency ?? "USD",
           taxRate: formatTaxRate(profile?.defaultTaxRateBps ?? 0).replace("%", ""),
           paymentTermsDays: profile?.paymentTermsDays ?? 14,

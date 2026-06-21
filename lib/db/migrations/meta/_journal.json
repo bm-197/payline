@@ -22,6 +22,20 @@
       "when": 1781363149212,
       "tag": "0002_gray_tyger_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782050037890,
+      "tag": "0003_yielding_vance_astro",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782051097534,
+      "tag": "0004_fixed_medusa",
+      "breakpoints": true
     }
   ]
 }

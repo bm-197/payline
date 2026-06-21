@@ -103,11 +103,14 @@ export const businessProfile = pgTable("business_profile", {
   businessName: text("business_name").notNull(),
   logoUrl: text("logo_url"),
   address: text("address"),
+  brandColor: text("brand_color"),
+  invoiceFooter: text("invoice_footer"),
   defaultCurrency: text("default_currency").notNull().default("USD"),
   defaultTaxRateBps: integer("default_tax_rate_bps").notNull().default(0),
   paymentTermsDays: integer("payment_terms_days").notNull().default(14),
   invoiceNumberPrefix: text("invoice_number_prefix").notNull().default("INV-"),
   nextInvoiceSeq: integer("next_invoice_seq").notNull().default(1),
+  nextClientSeq: integer("next_client_seq").notNull().default(1001),
   // Days relative to due date when reminders fire. Negative = before due.
   reminderOffsetDays: jsonb("reminder_offset_days").$type<number[]>().notNull().default([-3, 0, 3]),
   // Stripe Connect (Express): the freelancer's connected account and whether it can
@@ -131,6 +134,8 @@ export const client = pgTable(
     company: text("company"),
     address: text("address"),
     notes: text("notes"),
+    customerNumber: integer("customer_number"),
+    nextInvoiceSeq: integer("next_invoice_seq").notNull().default(1),
     ...timestamps,
   },
   (t) => [index("client_user_idx").on(t.userId)],

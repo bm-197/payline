@@ -10,22 +10,19 @@ import {
 } from "./state";
 
 describe("formatInvoiceNumber", () => {
-  it("zero-pads to four digits with the prefix", () => {
-    expect(formatInvoiceNumber("INV-", 1)).toBe("INV-0001");
-    expect(formatInvoiceNumber("INV-", 42)).toBe("INV-0042");
+  it("combines customer number, issue date, and a 3-digit serial", () => {
+    expect(formatInvoiceNumber(5030, "2024-02-02", 1)).toBe("5030-20240202-001");
+    expect(formatInvoiceNumber(1001, "2026-06-13", 42)).toBe("1001-20260613-042");
   });
 
-  it("does not truncate large sequences", () => {
-    expect(formatInvoiceNumber("INV-", 12345)).toBe("INV-12345");
+  it("does not truncate serials past 999", () => {
+    expect(formatInvoiceNumber(1001, "2026-01-01", 1234)).toBe("1001-20260101-1234");
   });
 
-  it("honors a custom prefix", () => {
-    expect(formatInvoiceNumber("2026-", 3)).toBe("2026-0003");
-  });
-
-  it("rejects non-positive sequences", () => {
-    expect(() => formatInvoiceNumber("INV-", 0)).toThrow();
-    expect(() => formatInvoiceNumber("INV-", -1)).toThrow();
+  it("rejects bad inputs", () => {
+    expect(() => formatInvoiceNumber(0, "2026-01-01", 1)).toThrow();
+    expect(() => formatInvoiceNumber(1001, "2026-01-01", 0)).toThrow();
+    expect(() => formatInvoiceNumber(1001, "2026/01/01", 1)).toThrow();
   });
 });
 

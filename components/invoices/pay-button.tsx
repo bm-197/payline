@@ -3,7 +3,15 @@
 import { useState, useTransition } from "react";
 import { createCheckoutSession } from "@/lib/invoices/checkout";
 
-export function PayButton({ token, amountLabel }: { token: string; amountLabel: string }) {
+export function PayButton({
+  token,
+  amountLabel,
+  brandColor,
+}: {
+  token: string;
+  amountLabel: string;
+  brandColor?: string | null;
+}) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -19,13 +27,18 @@ export function PayButton({ token, amountLabel }: { token: string; amountLabel: 
     });
   }
 
+  const branded = brandColor
+    ? "w-full rounded-xl px-4 py-3 font-medium text-white shadow-xl transition motion-safe:hover:scale-[1.01] motion-safe:active:scale-[0.99] disabled:opacity-60"
+    : "w-full rounded-xl bg-linear-to-b from-zinc-800 to-black px-4 py-3 font-medium text-white shadow-xl shadow-zinc-900/20 transition motion-safe:hover:scale-[1.01] motion-safe:active:scale-[0.99] disabled:opacity-60";
+
   return (
     <div className="text-center">
       <button
         type="button"
         onClick={pay}
         disabled={pending}
-        className="w-full rounded-xl bg-linear-to-b from-zinc-800 to-black px-4 py-3 font-medium text-white shadow-xl shadow-zinc-900/20 transition motion-safe:hover:scale-[1.01] motion-safe:active:scale-[0.99] disabled:opacity-60"
+        style={brandColor ? { backgroundColor: brandColor } : undefined}
+        className={branded}
       >
         {pending ? "Redirecting to checkout..." : `Pay ${amountLabel}`}
       </button>

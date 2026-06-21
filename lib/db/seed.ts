@@ -65,11 +65,13 @@ async function main() {
     .set({
       businessName: "Vale Studio",
       address: "21 Maple Row\nPortland, OR 97201",
+      brandColor: "#7c3aed",
+      invoiceFooter: "Thank you for your business. Payment is due within 14 days.",
       defaultCurrency: "USD",
       defaultTaxRateBps: 0,
       paymentTermsDays: 14,
       invoiceNumberPrefix: "INV-",
-      nextInvoiceSeq: 7,
+      nextClientSeq: 1004,
       reminderOffsetDays: [-3, 0, 3],
     })
     .where(eq(businessProfile.userId, userId));
@@ -91,9 +93,10 @@ async function main() {
   ] as const;
 
   await db.insert(client).values(
-    clients.map((c) => ({
+    clients.map((c, i) => ({
       id: c.id,
       userId,
+      customerNumber: 1001 + i,
       name: c.name,
       email: c.email,
       company: c.company,
@@ -101,7 +104,10 @@ async function main() {
     })),
   );
 
-  // One spec per invoice state. seq drives the invoice number.
+  const customerNumberOf = (id: string) => 1001 + clients.findIndex((c) => c.id === id);
+  const clientSeq: Record<string, number> = {};
+
+  // One spec per invoice state.
   type InvoiceSpec = {
     seq: number;
     clientId: string;
@@ -185,6 +191,8 @@ async function main() {
     });
 
     const invoiceId = newId("invoice");
+    const invSeq = (clientSeq[spec.clientId] ?? 0) + 1;
+    clientSeq[spec.clientId] = invSeq;
     const issue = daysFromNow(spec.state === "overdue" ? -30 : spec.state === "draft" ? 0 : -7);
     const due = daysFromNow(spec.state === "overdue" ? -16 : spec.state === "draft" ? 14 : 7);
 
@@ -197,7 +205,7 @@ async function main() {
       id: invoiceId,
       userId,
       clientId: spec.clientId,
-      number: formatInvoiceNumber("INV-", spec.seq),
+      number: formatInvoiceNumber(customerNumberOf(spec.clientId), isoDate(issue), invSeq),
       currency: spec.currency,
       status: storedStatus,
       issueDate: isoDate(issue),
@@ -277,6 +285,13 @@ async function main() {
         }),
       );
     }
+  }
+
+  for (const [clientId, used] of Object.entries(clientSeq)) {
+    await db
+      .update(client)
+      .set({ nextInvoiceSeq: used + 1 })
+      .where(eq(client.id, clientId));
   }
 
   console.log(

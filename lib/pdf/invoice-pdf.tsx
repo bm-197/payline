@@ -42,6 +42,16 @@ const styles = StyleSheet.create({
   grand: { borderTopWidth: 1, borderTopColor: line, marginTop: 4, paddingTop: 6 },
   notes: { marginTop: 24, color: muted, borderTopWidth: 1, borderTopColor: line, paddingTop: 10 },
   paid: { marginTop: 24, color: "#4a6b4c", fontFamily: "Helvetica-Bold" },
+  brandBar: { height: 4, borderRadius: 2, marginBottom: 24 },
+  footer: {
+    marginTop: 32,
+    borderTopWidth: 1,
+    borderTopColor: line,
+    paddingTop: 10,
+    fontSize: 8,
+    color: faint,
+  },
+  footerNote: { color: muted, marginBottom: 4 },
 });
 
 type Data = {
@@ -61,9 +71,11 @@ const statusLabels: Record<string, string> = {
 
 export function InvoiceDocument({ invoice, lines, client, business }: Data) {
   const c = invoice.currency;
+  const brand = business?.brandColor ?? ink;
   return (
     <Document title={invoice.number}>
       <Page size="A4" style={styles.page}>
+        <View style={[styles.brandBar, { backgroundColor: brand }]} />
         <View style={styles.headerRow}>
           <View>
             <Text style={styles.business}>{business?.businessName ?? "Invoice"}</Text>
@@ -130,6 +142,13 @@ export function InvoiceDocument({ invoice, lines, client, business }: Data) {
 
         {invoice.notes ? <Text style={styles.notes}>{invoice.notes}</Text> : null}
         {invoice.status === "paid" ? <Text style={styles.paid}>PAID IN FULL</Text> : null}
+
+        <View style={styles.footer}>
+          {business?.invoiceFooter ? (
+            <Text style={styles.footerNote}>{business.invoiceFooter}</Text>
+          ) : null}
+          <Text>Powered by Payline</Text>
+        </View>
       </Page>
     </Document>
   );
