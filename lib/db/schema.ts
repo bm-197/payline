@@ -11,6 +11,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import type { InvoiceTheme } from "@/lib/invoices/theme";
 import { newId, newPublicToken } from "./ids";
 
 // Money is always stored as integer minor units in bigint columns (int4 maxes at
@@ -105,6 +106,7 @@ export const businessProfile = pgTable("business_profile", {
   address: text("address"),
   brandColor: text("brand_color"),
   invoiceFooter: text("invoice_footer"),
+  theme: jsonb("theme").$type<InvoiceTheme>(),
   defaultCurrency: text("default_currency").notNull().default("USD"),
   defaultTaxRateBps: integer("default_tax_rate_bps").notNull().default(0),
   paymentTermsDays: integer("payment_terms_days").notNull().default(14),
@@ -134,7 +136,7 @@ export const client = pgTable(
     company: text("company"),
     address: text("address"),
     notes: text("notes"),
-    customerNumber: integer("customer_number"),
+    clientNumber: integer("client_number"),
     nextInvoiceSeq: integer("next_invoice_seq").notNull().default(1),
     ...timestamps,
   },
@@ -159,6 +161,9 @@ export const invoice = pgTable(
     issueDate: date("issue_date").notNull(),
     dueDate: date("due_date").notNull(),
     notes: text("notes"),
+    // Frozen at send time so an already-sent invoice never restyles when the
+    // business theme changes. Null (drafts) falls back to the live business theme.
+    theme: jsonb("theme").$type<InvoiceTheme>(),
     subtotal: money("subtotal").notNull().default(0),
     discount: money("discount").notNull().default(0),
     taxRateBps: integer("tax_rate_bps").notNull().default(0),

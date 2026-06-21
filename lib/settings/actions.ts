@@ -14,17 +14,6 @@ export type SettingsState = { error?: string; ok?: boolean };
 const schema = z.object({
   businessName: z.string().trim().min(1, "Business name is required.").max(200),
   address: z.string().trim().max(500).optional(),
-  logoUrl: z.union([z.string().trim().url("Enter a valid URL."), z.literal("")]).optional(),
-  brandColor: z
-    .union([
-      z
-        .string()
-        .trim()
-        .regex(/^#[0-9a-fA-F]{6}$/, "Use a hex color like #1a73e8."),
-      z.literal(""),
-    ])
-    .optional(),
-  invoiceFooter: z.string().trim().max(300).optional(),
   defaultCurrency: z.enum(SUPPORTED_CURRENCIES),
   taxRate: z.string().default("0"),
   paymentTermsDays: z.coerce.number().int().min(0).max(365),
@@ -39,9 +28,6 @@ export async function updateBusinessProfileAction(
   const parsed = schema.safeParse({
     businessName: formData.get("businessName") ?? "",
     address: formData.get("address") ?? "",
-    logoUrl: formData.get("logoUrl") ?? "",
-    brandColor: formData.get("brandColor") ?? "",
-    invoiceFooter: formData.get("invoiceFooter") ?? "",
     defaultCurrency: formData.get("defaultCurrency") ?? "USD",
     taxRate: formData.get("taxRate") ?? "0",
     paymentTermsDays: formData.get("paymentTermsDays") ?? "0",
@@ -72,9 +58,6 @@ export async function updateBusinessProfileAction(
     .set({
       businessName: parsed.data.businessName,
       address: parsed.data.address || null,
-      logoUrl: parsed.data.logoUrl || null,
-      brandColor: parsed.data.brandColor || null,
-      invoiceFooter: parsed.data.invoiceFooter || null,
       defaultCurrency: parsed.data.defaultCurrency,
       defaultTaxRateBps: taxBps,
       paymentTermsDays: parsed.data.paymentTermsDays,

@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, Copy } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/cn";
 
@@ -34,9 +35,11 @@ export function CopyButton({
       )}
     >
       {copied ? "Copied" : (label ?? "Copy")}
-      <span aria-hidden className={cn("text-xs", copied ? "text-sage-deep" : "text-faint")}>
-        {copied ? "✓" : "⧉"}
-      </span>
+      {copied ? (
+        <Check className="size-3.5 text-sage-deep" strokeWidth={1.6} aria-hidden />
+      ) : (
+        <Copy className="size-3.5 text-faint" strokeWidth={1.6} aria-hidden />
+      )}
     </button>
   );
 }

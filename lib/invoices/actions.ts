@@ -22,6 +22,7 @@ import { computeInvoiceTotals, parseAmountToMinor, parseQuantity, parseTaxRate }
 import { SUPPORTED_CURRENCIES } from "@/lib/money/currency";
 import { formatInvoiceNumber } from "./numbering";
 import { assertTransition } from "./state";
+import { parseTheme } from "./theme";
 
 export type InvoiceFormState = { error?: string };
 
@@ -95,20 +96,20 @@ export async function createDraftInvoiceAction(
     });
     if (!cust) throw new Error("Client not found.");
 
-    const customerNumber = cust.customerNumber ?? profile.nextClientSeq;
-    if (cust.customerNumber == null) {
+    const clientNumber = cust.clientNumber ?? profile.nextClientSeq;
+    if (cust.clientNumber == null) {
       await tx
         .update(businessProfile)
-        .set({ nextClientSeq: customerNumber + 1 })
+        .set({ nextClientSeq: clientNumber + 1 })
         .where(eq(businessProfile.userId, user.id));
     }
     const seq = cust.nextInvoiceSeq;
     await tx
       .update(client)
-      .set({ customerNumber, nextInvoiceSeq: seq + 1 })
+      .set({ clientNumber, nextInvoiceSeq: seq + 1 })
       .where(eq(client.id, cust.id));
 
-    const number = formatInvoiceNumber(customerNumber, data.issueDate, seq);
+    const number = formatInvoiceNumber(clientNumber, data.issueDate, seq);
 
     const id = newId("invoice");
     await tx.insert(invoice).values({
@@ -176,8 +177,17 @@ export async function sendInvoiceAction(id: string): Promise<InvoiceActionState>
   if (inv.status !== "draft") return { error: "This invoice has already been sent." };
 
   const now = new Date();
+  // Freeze the current business theme onto the invoice: from here it's what the
+  // client saw, immune to later design changes.
+  const profile = await db.query.businessProfile.findFirst({
+    where: eq(businessProfile.userId, user.id),
+  });
+  const snapshot = parseTheme(profile?.theme);
   await db.transaction(async (tx) => {
-    await tx.update(invoice).set({ status: "sent", sentAt: now }).where(eq(invoice.id, id));
+    await tx
+      .update(invoice)
+      .set({ status: "sent", sentAt: now, theme: snapshot })
+      .where(eq(invoice.id, id));
     await tx.insert(invoiceActivity).values({
       id: newId("activity"),
       invoiceId: id,
@@ -187,9 +197,6 @@ export async function sendInvoiceAction(id: string): Promise<InvoiceActionState>
   });
 
   const cust = await db.query.client.findFirst({ where: eq(client.id, inv.clientId) });
-  const profile = await db.query.businessProfile.findFirst({
-    where: eq(businessProfile.userId, user.id),
-  });
   if (cust?.email) {
     await getMailer().send(
       buildInvoiceEmail({

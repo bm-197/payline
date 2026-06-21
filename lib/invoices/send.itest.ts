@@ -23,6 +23,7 @@ import { db } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
 import { businessProfile, client, invoice, invoiceActivity, user } from "@/lib/db/schema";
 import { sendInvoiceAction } from "@/lib/invoices/actions";
+import { defaultTheme } from "@/lib/invoices/theme";
 
 const invoiceId = newId("invoice");
 
@@ -30,9 +31,12 @@ describe("sendInvoiceAction (integration, hits dev DB)", () => {
   beforeAll(async () => {
     await db.delete(user).where(eq(user.id, h.userId));
     await db.insert(user).values({ id: h.userId, email: "itest@payline.test", name: "IT" });
-    await db
-      .insert(businessProfile)
-      .values({ id: newId("business"), userId: h.userId, businessName: "IT Co" });
+    await db.insert(businessProfile).values({
+      id: newId("business"),
+      userId: h.userId,
+      businessName: "IT Co",
+      theme: { ...defaultTheme, accentColor: "#abcdef", layout: "bold" },
+    });
     const clientId = newId("client");
     await db
       .insert(client)
@@ -63,6 +67,10 @@ describe("sendInvoiceAction (integration, hits dev DB)", () => {
     const updated = await db.query.invoice.findFirst({ where: eq(invoice.id, invoiceId) });
     expect(updated?.status).toBe("sent");
     expect(updated?.sentAt).not.toBeNull();
+    // The business theme is frozen onto the invoice at send.
+    expect(updated?.theme?.accentColor).toBe("#abcdef");
+    expect(updated?.theme?.layout).toBe("bold");
+    expect(updated?.theme?.font).toBe(defaultTheme.font);
 
     expect(h.mailerSend).toHaveBeenCalledTimes(1);
     expect(h.emitSent).toHaveBeenCalledWith(invoiceId, h.userId);

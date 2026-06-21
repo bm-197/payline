@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { LayoutDashboard, ReceiptText, Settings, Users } from "lucide-react";
+import { LayoutDashboard, Palette, ReceiptText, Settings, Users } from "lucide-react";
 import { cookies } from "next/headers";
 import { CommandPalette } from "@/components/command-palette";
 import { Sidebar } from "@/components/sidebar";
@@ -31,6 +31,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             href: "/invoices",
             label: "Invoices",
             icon: <ReceiptText className="size-5" strokeWidth={1.6} />,
+          },
+          {
+            href: "/invoice-design",
+            label: "Design",
+            icon: <Palette className="size-5" strokeWidth={1.6} />,
           },
           {
             href: "/clients",

@@ -10,6 +10,11 @@ const COMMANDS: Command[] = [
   { label: "Go to Dashboard", href: "/dashboard", keywords: "home overview" },
   { label: "Go to Invoices", href: "/invoices", keywords: "bills" },
   { label: "New invoice", href: "/invoices/new", keywords: "create bill add" },
+  {
+    label: "Invoice design",
+    href: "/invoice-design",
+    keywords: "theme brand customize font color appearance",
+  },
   { label: "Go to Clients", href: "/clients", keywords: "customers people" },
   { label: "New client", href: "/clients/new", keywords: "create add customer" },
   { label: "Settings", href: "/settings", keywords: "profile reminders tax" },

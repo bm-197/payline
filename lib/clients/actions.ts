@@ -53,17 +53,17 @@ export async function createClientAction(
     const profile = await tx.query.businessProfile.findFirst({
       where: eq(businessProfile.userId, user.id),
     });
-    const customerNumber = profile?.nextClientSeq ?? 1001;
+    const clientNumber = profile?.nextClientSeq ?? 1001;
     if (profile) {
       await tx
         .update(businessProfile)
-        .set({ nextClientSeq: customerNumber + 1 })
+        .set({ nextClientSeq: clientNumber + 1 })
         .where(eq(businessProfile.userId, user.id));
     }
     await tx.insert(client).values({
       id: newId("client"),
       userId: user.id,
-      customerNumber,
+      clientNumber,
       ...toValues(parsed.data),
     });
   });

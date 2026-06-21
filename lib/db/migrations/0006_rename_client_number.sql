@@ -1,0 +1,1 @@
+ALTER TABLE "client" RENAME COLUMN "customer_number" TO "client_number";

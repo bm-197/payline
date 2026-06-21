@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { EB_Garamond, Geist, Inter } from "next/font/google";
+import { invoiceFontVariables } from "@/lib/fonts";
 import "./globals.css";
 
 const inter = Inter({
@@ -28,7 +29,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${ebGaramond.variable} ${geist.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${ebGaramond.variable} ${geist.variable} ${invoiceFontVariables}`}
+    >
       <body className="min-h-dvh bg-canvas text-ink antialiased">{children}</body>
     </html>
   );

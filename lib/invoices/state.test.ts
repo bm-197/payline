@@ -10,7 +10,7 @@ import {
 } from "./state";
 
 describe("formatInvoiceNumber", () => {
-  it("combines customer number, issue date, and a 3-digit serial", () => {
+  it("combines client number, issue date, and a 3-digit serial", () => {
     expect(formatInvoiceNumber(5030, "2024-02-02", 1)).toBe("5030-20240202-001");
     expect(formatInvoiceNumber(1001, "2026-06-13", 42)).toBe("1001-20260613-042");
   });

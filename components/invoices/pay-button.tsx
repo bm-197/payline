@@ -43,7 +43,6 @@ export function PayButton({
         {pending ? "Redirecting to checkout..." : `Pay ${amountLabel}`}
       </button>
       {error ? <p className="mt-2 text-xs text-blush-deep">{error}</p> : null}
-      <p className="mt-2 text-xs text-faint">Secure card payment via Stripe.</p>
     </div>
   );
 }

@@ -1,58 +1,89 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { BusinessProfile, Client, Invoice, LineItem } from "@/lib/db/schema";
 import { formatDate } from "@/lib/format";
+import { baseFontPx, densityScale, type InvoiceTheme, parseTheme } from "@/lib/invoices/theme";
 import { formatMoney, formatQuantity } from "@/lib/money";
+import { pdfFontFamily, registerPdfFonts } from "./fonts";
+
+registerPdfFonts();
 
 const ink = "#19191d";
 const muted = "#626275";
 const faint = "#898b91";
 const line = "#e7e9ef";
 
-const styles = StyleSheet.create({
-  page: { padding: 40, fontSize: 10, color: ink, fontFamily: "Helvetica" },
-  headerRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 28 },
-  business: { fontSize: 15, fontFamily: "Helvetica-Bold" },
-  address: { color: muted, fontSize: 8, marginTop: 4, lineHeight: 1.4 },
-  number: { fontSize: 11, fontFamily: "Helvetica-Bold", textAlign: "right" },
-  status: { color: faint, fontSize: 9, textAlign: "right", marginTop: 3 },
-  metaRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 24 },
-  label: { color: faint, fontSize: 8, marginBottom: 2 },
-  strong: { fontFamily: "Helvetica-Bold" },
-  tableHead: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: line,
-    paddingBottom: 6,
-    color: faint,
-    fontSize: 8,
-    textTransform: "uppercase",
-  },
-  row: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: line,
-    paddingVertical: 7,
-  },
-  cDesc: { flex: 1 },
-  cQty: { width: 60, textAlign: "right" },
-  cUnit: { width: 80, textAlign: "right" },
-  cAmount: { width: 80, textAlign: "right" },
-  totals: { marginTop: 18, marginLeft: "auto", width: 200 },
-  totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
-  grand: { borderTopWidth: 1, borderTopColor: line, marginTop: 4, paddingTop: 6 },
-  notes: { marginTop: 24, color: muted, borderTopWidth: 1, borderTopColor: line, paddingTop: 10 },
-  paid: { marginTop: 24, color: "#4a6b4c", fontFamily: "Helvetica-Bold" },
-  brandBar: { height: 4, borderRadius: 2, marginBottom: 24 },
-  footer: {
-    marginTop: 32,
-    borderTopWidth: 1,
-    borderTopColor: line,
-    paddingTop: 10,
-    fontSize: 8,
-    color: faint,
-  },
-  footerNote: { color: muted, marginBottom: 4 },
-});
+// Styles scale with the theme's text size + density so the PDF tracks the page.
+function makeStyles(theme: InvoiceTheme) {
+  const f = baseFontPx(theme.textScale) / 14;
+  const d = densityScale(theme.density);
+  const fs = (px: number) => Math.round(px * f);
+  const sp = (px: number) => Math.round(px * d);
+  return StyleSheet.create({
+    page: { padding: sp(40), fontSize: fs(10), color: ink },
+    headerRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: sp(28) },
+    business: { fontSize: fs(15), fontWeight: "bold" },
+    address: { color: muted, fontSize: fs(8), marginTop: 4, lineHeight: 1.4 },
+    number: { fontSize: fs(11), fontWeight: "bold", textAlign: "right" },
+    status: { color: faint, fontSize: fs(9), textAlign: "right", marginTop: 3 },
+    metaRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: sp(24) },
+    label: { color: faint, fontSize: fs(8), marginBottom: 2 },
+    strong: { fontWeight: "bold" },
+    tableHead: {
+      flexDirection: "row",
+      borderBottomWidth: 1,
+      borderBottomColor: line,
+      paddingBottom: 6,
+      color: faint,
+      fontSize: fs(8),
+      textTransform: "uppercase",
+    },
+    row: {
+      flexDirection: "row",
+      borderBottomWidth: 1,
+      borderBottomColor: line,
+      paddingVertical: sp(7),
+    },
+    cDesc: { flex: 1 },
+    cQty: { width: 60, textAlign: "right" },
+    cUnit: { width: 80, textAlign: "right" },
+    cAmount: { width: 80, textAlign: "right" },
+    totals: { marginTop: sp(18), marginLeft: "auto", width: 200 },
+    totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
+    grand: { borderTopWidth: 1, borderTopColor: line, marginTop: 4, paddingTop: 6 },
+    notes: {
+      marginTop: sp(24),
+      color: muted,
+      borderTopWidth: 1,
+      borderTopColor: line,
+      paddingTop: 10,
+    },
+    paid: { marginTop: sp(24), color: "#4a6b4c", fontWeight: "bold" },
+    brandRule: { width: 28, height: 2.5, borderRadius: 2, marginTop: 5 },
+    footer: {
+      marginTop: sp(32),
+      borderTopWidth: 1,
+      borderTopColor: line,
+      paddingTop: 10,
+      fontSize: fs(8),
+      color: faint,
+    },
+    footerNote: { color: muted, marginBottom: 4 },
+    businessMinimal: { fontSize: fs(13) },
+    boldBanner: {
+      marginTop: -sp(40),
+      marginLeft: -sp(40),
+      marginRight: -sp(40),
+      marginBottom: sp(24),
+      padding: sp(40),
+      flexDirection: "row",
+      justifyContent: "space-between",
+    },
+    boldName: { fontSize: fs(15), fontWeight: "bold", color: "#ffffff" },
+    boldAddress: { color: "#ffffffbf", fontSize: fs(8), marginTop: 4, lineHeight: 1.4 },
+    boldNumber: { fontSize: fs(11), fontWeight: "bold", color: "#ffffff", textAlign: "right" },
+    boldStatus: { color: "#ffffffcc", fontSize: fs(9), textAlign: "right", marginTop: 3 },
+  });
+}
 
 type Data = {
   invoice: Invoice;
@@ -71,21 +102,56 @@ const statusLabels: Record<string, string> = {
 
 export function InvoiceDocument({ invoice, lines, client, business }: Data) {
   const c = invoice.currency;
-  const brand = business?.brandColor ?? ink;
+  const theme = parseTheme(invoice.theme ?? business?.theme);
+  const brand = theme.accentColor;
+  const fontFamily = pdfFontFamily(theme.font);
+  const styles = makeStyles(theme);
   return (
     <Document title={invoice.number}>
-      <Page size="A4" style={styles.page}>
-        <View style={[styles.brandBar, { backgroundColor: brand }]} />
-        <View style={styles.headerRow}>
-          <View>
-            <Text style={styles.business}>{business?.businessName ?? "Invoice"}</Text>
-            {business?.address ? <Text style={styles.address}>{business.address}</Text> : null}
+      <Page size="A4" style={[styles.page, { fontFamily }]}>
+        {theme.layout === "bold" ? (
+          <View style={[styles.boldBanner, { backgroundColor: brand }]}>
+            <View>
+              <Text style={styles.boldName}>{business?.businessName ?? "Invoice"}</Text>
+              {business?.address ? (
+                <Text style={styles.boldAddress}>{business.address}</Text>
+              ) : null}
+            </View>
+            <View>
+              <Text style={styles.boldNumber}>{`Inv #${invoice.number}`}</Text>
+              <Text style={styles.boldStatus}>
+                {statusLabels[invoice.status] ?? invoice.status}
+              </Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.number}>{invoice.number}</Text>
-            <Text style={styles.status}>{statusLabels[invoice.status] ?? invoice.status}</Text>
+        ) : (
+          <View style={styles.headerRow}>
+            <View>
+              <Text style={theme.layout === "minimal" ? styles.businessMinimal : styles.business}>
+                {business?.businessName ?? "Invoice"}
+              </Text>
+              {theme.layout === "classic" ? (
+                <View style={[styles.brandRule, { backgroundColor: brand }]} />
+              ) : null}
+              {business?.address ? <Text style={styles.address}>{business.address}</Text> : null}
+            </View>
+            <View>
+              <Text
+                style={[
+                  styles.number,
+                  theme.layout === "classic"
+                    ? { color: brand }
+                    : theme.layout === "minimal"
+                      ? { color: faint }
+                      : {},
+                ]}
+              >
+                {`Inv #${invoice.number}`}
+              </Text>
+              <Text style={styles.status}>{statusLabels[invoice.status] ?? invoice.status}</Text>
+            </View>
           </View>
-        </View>
+        )}
 
         <View style={styles.metaRow}>
           <View>
@@ -97,8 +163,12 @@ export function InvoiceDocument({ invoice, lines, client, business }: Data) {
           <View>
             <Text style={styles.label}>ISSUED</Text>
             <Text>{formatDate(invoice.issueDate)}</Text>
-            <Text style={[styles.label, { marginTop: 8 }]}>DUE</Text>
-            <Text>{formatDate(invoice.dueDate)}</Text>
+            {theme.fields.showDueDate ? (
+              <>
+                <Text style={[styles.label, { marginTop: 8 }]}>DUE</Text>
+                <Text>{formatDate(invoice.dueDate)}</Text>
+              </>
+            ) : null}
           </View>
         </View>
 
@@ -140,13 +210,13 @@ export function InvoiceDocument({ invoice, lines, client, business }: Data) {
           </View>
         </View>
 
-        {invoice.notes ? <Text style={styles.notes}>{invoice.notes}</Text> : null}
+        {theme.fields.showNotes && invoice.notes ? (
+          <Text style={styles.notes}>{invoice.notes}</Text>
+        ) : null}
         {invoice.status === "paid" ? <Text style={styles.paid}>PAID IN FULL</Text> : null}
 
         <View style={styles.footer}>
-          {business?.invoiceFooter ? (
-            <Text style={styles.footerNote}>{business.invoiceFooter}</Text>
-          ) : null}
+          {theme.footer ? <Text style={styles.footerNote}>{theme.footer}</Text> : null}
           <Text>Powered by Payline</Text>
         </View>
       </Page>

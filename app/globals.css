@@ -129,3 +129,24 @@ body {
     transform: none;
   }
 }
+
+/* react-colorful, themed to match the cozy glass picker (component: color-picker.tsx). */
+.pl-colorpicker .react-colorful {
+  width: 100%;
+  height: auto;
+  gap: 0.75rem;
+}
+.pl-colorpicker .react-colorful__saturation {
+  height: 150px;
+  border-radius: 1rem;
+  border-bottom: none;
+}
+.pl-colorpicker .react-colorful__hue {
+  height: 0.75rem;
+  border-radius: 9999px;
+}
+.pl-colorpicker .react-colorful__pointer {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-width: 2px;
+}

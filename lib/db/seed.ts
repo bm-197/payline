@@ -2,6 +2,7 @@ import "dotenv/config";
 import { eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { formatInvoiceNumber } from "@/lib/invoices/numbering";
+import { defaultTheme } from "@/lib/invoices/theme";
 import {
   computeInvoiceTotals,
   type InvoiceLineInput,
@@ -60,13 +61,18 @@ async function main() {
   });
   const userId = signedUp.user.id;
 
+  const demoTheme = {
+    ...defaultTheme,
+    accentColor: "#7c3aed",
+    footer: "Thank you for your business. Payment is due within 14 days.",
+  };
+
   await db
     .update(businessProfile)
     .set({
       businessName: "Vale Studio",
       address: "21 Maple Row\nPortland, OR 97201",
-      brandColor: "#7c3aed",
-      invoiceFooter: "Thank you for your business. Payment is due within 14 days.",
+      theme: demoTheme,
       defaultCurrency: "USD",
       defaultTaxRateBps: 0,
       paymentTermsDays: 14,
@@ -96,7 +102,7 @@ async function main() {
     clients.map((c, i) => ({
       id: c.id,
       userId,
-      customerNumber: 1001 + i,
+      clientNumber: 1001 + i,
       name: c.name,
       email: c.email,
       company: c.company,
@@ -104,7 +110,7 @@ async function main() {
     })),
   );
 
-  const customerNumberOf = (id: string) => 1001 + clients.findIndex((c) => c.id === id);
+  const clientNumberOf = (id: string) => 1001 + clients.findIndex((c) => c.id === id);
   const clientSeq: Record<string, number> = {};
 
   // One spec per invoice state.
@@ -205,12 +211,13 @@ async function main() {
       id: invoiceId,
       userId,
       clientId: spec.clientId,
-      number: formatInvoiceNumber(customerNumberOf(spec.clientId), isoDate(issue), invSeq),
+      number: formatInvoiceNumber(clientNumberOf(spec.clientId), isoDate(issue), invSeq),
       currency: spec.currency,
       status: storedStatus,
       issueDate: isoDate(issue),
       dueDate: isoDate(due),
       notes: "Seeded demo invoice.",
+      theme: storedStatus === "draft" ? null : demoTheme,
       subtotal: totals.subtotal,
       discount: totals.discount,
       taxRateBps: spec.taxBps,
