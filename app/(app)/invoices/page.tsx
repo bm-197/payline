@@ -7,15 +7,15 @@ import { MoneyText } from "@/components/ui/money-text";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { TableKeyboardNav } from "@/components/ui/table-keyboard-nav";
-import { requireUser } from "@/lib/auth/server";
+import { requireWorkspace } from "@/lib/auth/server";
 import { formatDate } from "@/lib/format";
 import { listInvoices } from "@/lib/invoices/queries";
 import { displayStatus } from "@/lib/invoices/state";
 import { formatMoney } from "@/lib/money";
 
 export default async function InvoicesPage() {
-  const user = await requireUser();
-  const invoices = await listInvoices(user.id);
+  const { orgId } = await requireWorkspace();
+  const invoices = await listInvoices(orgId);
   const now = new Date();
   const appUrl = process.env.APP_URL ?? "http://localhost:3000";
 
@@ -64,7 +64,7 @@ export default async function InvoicesPage() {
                         data-row-link
                         className="rounded font-geist font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
                       >
-                        {inv.number}
+                        Inv #{inv.number}
                       </Link>
                     </TD>
                     <TD>{inv.clientName}</TD>

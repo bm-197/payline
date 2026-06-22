@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
 import { ClientForm } from "@/components/clients/client-form";
 import { PageHeader } from "@/components/ui/page-header";
-import { requireUser } from "@/lib/auth/server";
+import { requireWorkspace } from "@/lib/auth/server";
 import { updateClientAction } from "@/lib/clients/actions";
 import { getClient } from "@/lib/clients/queries";
 
 export default async function EditClientPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await requireUser();
-  const existing = await getClient(user.id, id);
+  const { orgId } = await requireWorkspace();
+  const existing = await getClient(orgId, id);
   if (!existing) notFound();
 
   const action = updateClientAction.bind(null, id);

@@ -65,6 +65,8 @@ export const session = pgTable("session", {
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
+  // The team the user is currently working in (Better Auth organization plugin).
+  activeOrganizationId: text("active_organization_id"),
   ...timestamps,
 });
 
@@ -93,14 +95,66 @@ export const verification = pgTable("verification", {
   ...timestamps,
 });
 
+// Better Auth organization plugin tables. A "team" (our domain word) is an
+// organization here. Column shapes match the plugin's defaults; teams sub-feature is
+// NOT enabled (no team table). See docs/adr/0002.
+export const organization = pgTable("organization", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  logo: text("logo"),
+  metadata: text("metadata"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const member = pgTable(
+  "member",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    role: text("role").notNull().default("member"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("member_org_idx").on(t.organizationId), index("member_user_idx").on(t.userId)],
+);
+
+export const invitation = pgTable(
+  "invitation",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    role: text("role"),
+    status: text("status").notNull().default("pending"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    inviterId: text("inviter_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("invitation_org_idx").on(t.organizationId)],
+);
+
 export const businessProfile = pgTable("business_profile", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => newId("business")),
+  // Creator/audit only; a user can own several teams, so this is no longer unique.
   userId: text("user_id")
     .notNull()
-    .unique()
     .references(() => user.id, { onDelete: "cascade" }),
+  // The owning team. One business profile per team.
+  organizationId: text("organization_id")
+    .notNull()
+    .unique()
+    .references(() => organization.id, { onDelete: "cascade" }),
   businessName: text("business_name").notNull(),
   logoUrl: text("logo_url"),
   address: text("address"),
@@ -131,6 +185,9 @@ export const client = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     email: text("email"),
     company: text("company"),
@@ -140,7 +197,7 @@ export const client = pgTable(
     nextInvoiceSeq: integer("next_invoice_seq").notNull().default(1),
     ...timestamps,
   },
-  (t) => [index("client_user_idx").on(t.userId)],
+  (t) => [index("client_org_idx").on(t.organizationId)],
 );
 
 export const invoice = pgTable(
@@ -152,6 +209,9 @@ export const invoice = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
     clientId: text("client_id")
       .notNull()
       .references(() => client.id, { onDelete: "restrict" }),
@@ -179,9 +239,9 @@ export const invoice = pgTable(
     ...timestamps,
   },
   (t) => [
-    index("invoice_user_idx").on(t.userId),
+    index("invoice_org_idx").on(t.organizationId),
     index("invoice_client_idx").on(t.clientId),
-    uniqueIndex("invoice_user_number_idx").on(t.userId, t.number),
+    uniqueIndex("invoice_org_number_idx").on(t.organizationId, t.number),
   ],
 );
 

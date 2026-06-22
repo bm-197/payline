@@ -86,3 +86,30 @@ export function buildReminderEmail(input: ReminderEmailInput): EmailMessage {
 
   return { to: input.to, subject, text };
 }
+
+export type InviteEmailInput = {
+  to: string;
+  teamName: string;
+  inviterName: string;
+  acceptUrl: string;
+};
+
+/** Invitation to join a team. */
+export function buildInviteEmail(input: InviteEmailInput): EmailMessage {
+  const text = [
+    "Hi,",
+    "",
+    `${input.inviterName} invited you to join ${input.teamName} on Payline.`,
+    "",
+    `Accept the invitation here: ${input.acceptUrl}`,
+    "",
+    "If you weren't expecting this, you can ignore this email.",
+  ].join("\n");
+
+  return {
+    to: input.to,
+    subject: `Join ${input.teamName} on Payline`,
+    text,
+    html: `<p>${input.inviterName} invited you to join <strong>${input.teamName}</strong> on Payline.</p><p><a href="${input.acceptUrl}">Accept the invitation</a></p>`,
+  };
+}

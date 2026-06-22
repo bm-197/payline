@@ -7,6 +7,9 @@ const tokenNano = customAlphabet(alphabet, 32);
 
 export const ID_PREFIXES = {
   user: "usr",
+  organization: "org",
+  member: "mem",
+  invitation: "invt",
   business: "biz",
   client: "cli",
   invoice: "inv",

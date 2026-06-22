@@ -3,7 +3,7 @@ import Link from "next/link";
 import { InvoiceBuilder } from "@/components/invoices/invoice-builder";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { requireUser } from "@/lib/auth/server";
+import { requireWorkspace } from "@/lib/auth/server";
 import { listClients } from "@/lib/clients/queries";
 import { db } from "@/lib/db";
 import { businessProfile } from "@/lib/db/schema";
@@ -14,10 +14,10 @@ function ymd(d: Date): string {
 }
 
 export default async function NewInvoicePage() {
-  const user = await requireUser();
+  const { orgId } = await requireWorkspace();
   const [clients, profile] = await Promise.all([
-    listClients(user.id),
-    db.query.businessProfile.findFirst({ where: eq(businessProfile.userId, user.id) }),
+    listClients(orgId),
+    db.query.businessProfile.findFirst({ where: eq(businessProfile.organizationId, orgId) }),
   ]);
 
   const today = new Date();

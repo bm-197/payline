@@ -18,6 +18,7 @@ import {
   invoice,
   invoiceActivity,
   lineItem,
+  member,
   payment,
   reminder,
   user,
@@ -60,6 +61,10 @@ async function main() {
     body: { email: DEMO_EMAIL, password: DEMO_PASSWORD, name: "Robin Vale" },
   });
   const userId = signedUp.user.id;
+  // The signup hook created the user's personal team; everything seeded scopes to it.
+  const membership = await db.query.member.findFirst({ where: eq(member.userId, userId) });
+  const orgId = membership?.organizationId;
+  if (!orgId) throw new Error("Seed: personal team was not created for the demo user.");
 
   const demoTheme = {
     ...defaultTheme,
@@ -102,6 +107,7 @@ async function main() {
     clients.map((c, i) => ({
       id: c.id,
       userId,
+      organizationId: orgId,
       clientNumber: 1001 + i,
       name: c.name,
       email: c.email,
@@ -210,6 +216,7 @@ async function main() {
     await db.insert(invoice).values({
       id: invoiceId,
       userId,
+      organizationId: orgId,
       clientId: spec.clientId,
       number: formatInvoiceNumber(clientNumberOf(spec.clientId), isoDate(issue), invSeq),
       currency: spec.currency,

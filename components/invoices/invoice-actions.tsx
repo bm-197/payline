@@ -15,10 +15,12 @@ export function InvoiceActions({
   id,
   status,
   token,
+  can,
 }: {
   id: string;
   status: StoredStatus;
   token: string;
+  can: { send: boolean; markPaid: boolean; void: boolean };
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -38,7 +40,7 @@ export function InvoiceActions({
 
   return (
     <div className="space-y-3">
-      {status === "draft" ? (
+      {status === "draft" && can.send ? (
         <Button
           className="w-full"
           disabled={pending}
@@ -48,7 +50,7 @@ export function InvoiceActions({
         </Button>
       ) : null}
 
-      {status === "sent" || status === "viewed" ? (
+      {(status === "sent" || status === "viewed") && can.markPaid ? (
         <Button className="w-full" disabled={pending} onClick={() => run(() => markPaidAction(id))}>
           {pending ? "Working..." : "Mark as paid"}
         </Button>
@@ -60,7 +62,7 @@ export function InvoiceActions({
         </Button>
       </a>
 
-      {!terminal ? (
+      {!terminal && can.void ? (
         confirmingVoid ? (
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted">Void this invoice?</span>

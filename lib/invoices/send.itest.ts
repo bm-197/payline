@@ -5,11 +5,19 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 // Hoisted holders so the mock factories can see them.
 const h = vi.hoisted(() => ({
   userId: "usr_itest_send00",
+  orgId: "org_itest_send00",
   mailerSend: vi.fn(async () => ({ id: "log_itest" })),
   emitSent: vi.fn(async () => {}),
 }));
 
-vi.mock("@/lib/auth/server", () => ({ requireUser: async () => ({ id: h.userId }) }));
+vi.mock("@/lib/auth/server", () => ({
+  requireWorkspace: async () => ({
+    user: { id: h.userId },
+    orgId: h.orgId,
+    role: "owner",
+    can: () => true,
+  }),
+}));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
 vi.mock("@/lib/email", () => ({ getMailer: () => ({ name: "test", send: h.mailerSend }) }));
@@ -21,7 +29,14 @@ vi.mock("@/lib/inngest/events", () => ({
 
 import { db } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
-import { businessProfile, client, invoice, invoiceActivity, user } from "@/lib/db/schema";
+import {
+  businessProfile,
+  client,
+  invoice,
+  invoiceActivity,
+  organization,
+  user,
+} from "@/lib/db/schema";
 import { sendInvoiceAction } from "@/lib/invoices/actions";
 import { defaultTheme } from "@/lib/invoices/theme";
 
@@ -30,20 +45,28 @@ const invoiceId = newId("invoice");
 describe("sendInvoiceAction (integration, hits dev DB)", () => {
   beforeAll(async () => {
     await db.delete(user).where(eq(user.id, h.userId));
+    await db.delete(organization).where(eq(organization.id, h.orgId));
+    await db.insert(organization).values({ id: h.orgId, name: "IT Co", slug: "team-itest-send00" });
     await db.insert(user).values({ id: h.userId, email: "itest@payline.test", name: "IT" });
     await db.insert(businessProfile).values({
       id: newId("business"),
       userId: h.userId,
+      organizationId: h.orgId,
       businessName: "IT Co",
       theme: { ...defaultTheme, accentColor: "#abcdef", layout: "bold" },
     });
     const clientId = newId("client");
-    await db
-      .insert(client)
-      .values({ id: clientId, userId: h.userId, name: "Casey", email: "casey@example.com" });
+    await db.insert(client).values({
+      id: clientId,
+      userId: h.userId,
+      organizationId: h.orgId,
+      name: "Casey",
+      email: "casey@example.com",
+    });
     await db.insert(invoice).values({
       id: invoiceId,
       userId: h.userId,
+      organizationId: h.orgId,
       clientId,
       number: "INV-IT01",
       currency: "USD",
@@ -57,6 +80,7 @@ describe("sendInvoiceAction (integration, hits dev DB)", () => {
 
   afterAll(async () => {
     await db.delete(user).where(eq(user.id, h.userId));
+    await db.delete(organization).where(eq(organization.id, h.orgId));
     await db.$client.end();
   });
 

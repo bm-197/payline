@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useState, useTransition } from "react";
+import { OrgSwitcher, type Team } from "@/components/org-switcher";
 import { SearchTrigger, SearchTriggerIcon } from "@/components/search-trigger";
 import { signOut } from "@/lib/auth/client";
 import { cn } from "@/lib/cn";
@@ -49,12 +50,16 @@ export function Sidebar({
   brand,
   links,
   user,
+  teams,
+  activeTeamId,
   initialCollapsed,
   children,
 }: {
   brand: { name: string; logo: ReactNode };
   links: NavLink[];
   user: { name: string; sublabel?: string };
+  teams: Team[];
+  activeTeamId: string;
   initialCollapsed: boolean;
   children: ReactNode;
 }) {
@@ -107,12 +112,7 @@ export function Sidebar({
     </div>
   );
 
-  const brandBlock = (
-    <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
-      {brand.logo}
-      <span className="truncate font-semibold tracking-tight">{brand.name}</span>
-    </Link>
-  );
+  const brandBlock = <OrgSwitcher teams={teams} activeTeamId={activeTeamId} logo={brand.logo} />;
 
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
@@ -141,7 +141,9 @@ export function Sidebar({
           <Menu className="size-5" strokeWidth={1.6} />
         </button>
         {brand.logo}
-        <span className="truncate font-semibold tracking-tight">{brand.name}</span>
+        <span className="truncate font-semibold tracking-tight">
+          {teams.find((t) => t.id === activeTeamId)?.name ?? brand.name}
+        </span>
         <div className="ml-auto">
           <SearchTriggerIcon />
         </div>

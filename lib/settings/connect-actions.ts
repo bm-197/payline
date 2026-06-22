@@ -1,15 +1,18 @@
 "use server";
 
-import { requireUser } from "@/lib/auth/server";
+import { requireWorkspace } from "@/lib/auth/server";
 import { createOnboardingLink, getOrCreateConnectedAccount } from "@/lib/stripe/connect";
 
 export type ConnectResult = { url?: string; error?: string };
 
 /** Start (or resume) Stripe Express onboarding; returns a hosted link to redirect to. */
 export async function startStripeOnboarding(): Promise<ConnectResult> {
-  const user = await requireUser();
+  const { user, orgId, can } = await requireWorkspace();
+  if (!can("payouts", "manage")) {
+    return { error: "Only an owner can set up payouts for this team." };
+  }
   try {
-    const accountId = await getOrCreateConnectedAccount(user.id, user.email);
+    const accountId = await getOrCreateConnectedAccount(orgId, user.email);
     const url = await createOnboardingLink(accountId);
     return { url };
   } catch (err) {

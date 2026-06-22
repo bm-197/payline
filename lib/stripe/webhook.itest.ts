@@ -16,6 +16,7 @@ import {
   client,
   invoice,
   invoiceActivity,
+  organization,
   payment,
   stripeEvent,
   user,
@@ -23,6 +24,7 @@ import {
 import { handleStripeEvent } from "@/lib/stripe/process";
 
 const userId = "usr_itest_hook00";
+const orgId = "org_itest_hook00";
 const invoiceId = newId("invoice");
 const sessionId = "cs_test_hook_1";
 const eventId = "evt_test_hook_1";
@@ -46,16 +48,19 @@ function completedEvent(id: string): Stripe.Event {
 describe("Stripe webhook idempotency (integration, hits dev DB)", () => {
   beforeAll(async () => {
     await db.delete(user).where(eq(user.id, userId));
+    await db.delete(organization).where(eq(organization.id, orgId));
     await db.delete(stripeEvent).where(inArray(stripeEvent.eventId, [eventId, "evt_test_hook_2"]));
+    await db.insert(organization).values({ id: orgId, name: "Hook Co", slug: "team-itest-hook00" });
     await db.insert(user).values({ id: userId, email: "hook@payline.test", name: "Hook" });
     await db
       .insert(businessProfile)
-      .values({ id: newId("business"), userId, businessName: "Hook Co" });
+      .values({ id: newId("business"), userId, organizationId: orgId, businessName: "Hook Co" });
     const clientId = newId("client");
-    await db.insert(client).values({ id: clientId, userId, name: "Payer" });
+    await db.insert(client).values({ id: clientId, userId, organizationId: orgId, name: "Payer" });
     await db.insert(invoice).values({
       id: invoiceId,
       userId,
+      organizationId: orgId,
       clientId,
       number: "INV-HOOK1",
       currency: "USD",
@@ -71,6 +76,7 @@ describe("Stripe webhook idempotency (integration, hits dev DB)", () => {
 
   afterAll(async () => {
     await db.delete(user).where(eq(user.id, userId));
+    await db.delete(organization).where(eq(organization.id, orgId));
     await db.delete(stripeEvent).where(inArray(stripeEvent.eventId, [eventId, "evt_test_hook_2"]));
     await db.$client.end();
   });

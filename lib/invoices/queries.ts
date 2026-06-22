@@ -3,7 +3,7 @@ import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { client, invoice, invoiceActivity, lineItem } from "@/lib/db/schema";
 
-export function listInvoices(userId: string) {
+export function listInvoices(orgId: string) {
   return db
     .select({
       id: invoice.id,
@@ -19,13 +19,13 @@ export function listInvoices(userId: string) {
     })
     .from(invoice)
     .innerJoin(client, eq(client.id, invoice.clientId))
-    .where(eq(invoice.userId, userId))
+    .where(eq(invoice.organizationId, orgId))
     .orderBy(desc(invoice.createdAt));
 }
 
-export async function getInvoiceDetail(userId: string, id: string) {
+export async function getInvoiceDetail(orgId: string, id: string) {
   const inv = await db.query.invoice.findFirst({
-    where: and(eq(invoice.id, id), eq(invoice.userId, userId)),
+    where: and(eq(invoice.id, id), eq(invoice.organizationId, orgId)),
   });
   if (!inv) return null;
 

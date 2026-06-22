@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireUser } from "@/lib/auth/server";
+import { requireWorkspace } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { businessProfile } from "@/lib/db/schema";
 import { parseTaxRate } from "@/lib/money";
@@ -23,7 +23,8 @@ export async function updateBusinessProfileAction(
   _prev: SettingsState,
   formData: FormData,
 ): Promise<SettingsState> {
-  const user = await requireUser();
+  const { orgId, can } = await requireWorkspace();
+  if (!can("settings", "update")) return { error: "You don't have permission to edit settings." };
 
   const parsed = schema.safeParse({
     businessName: formData.get("businessName") ?? "",
@@ -63,7 +64,7 @@ export async function updateBusinessProfileAction(
       paymentTermsDays: parsed.data.paymentTermsDays,
       reminderOffsetDays: offsets,
     })
-    .where(eq(businessProfile.userId, user.id));
+    .where(eq(businessProfile.organizationId, orgId));
 
   revalidatePath("/settings");
   return { ok: true };

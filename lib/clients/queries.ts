@@ -3,7 +3,7 @@ import { and, asc, count, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { client, invoice } from "@/lib/db/schema";
 
-export async function listClients(userId: string) {
+export async function listClients(orgId: string) {
   return db
     .select({
       id: client.id,
@@ -14,13 +14,13 @@ export async function listClients(userId: string) {
     })
     .from(client)
     .leftJoin(invoice, eq(invoice.clientId, client.id))
-    .where(eq(client.userId, userId))
+    .where(eq(client.organizationId, orgId))
     .groupBy(client.id)
     .orderBy(asc(client.name));
 }
 
-export function getClient(userId: string, id: string) {
+export function getClient(orgId: string, id: string) {
   return db.query.client.findFirst({
-    where: and(eq(client.userId, userId), eq(client.id, id)),
+    where: and(eq(client.organizationId, orgId), eq(client.id, id)),
   });
 }

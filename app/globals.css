@@ -139,6 +139,21 @@ body {
   padding-bottom: 0.1em;
 }
 
+/* Scroll-reveal: ships in a slightly-lowered, faded state; a tiny
+   IntersectionObserver (components/ui/reveal.tsx) adds `is-visible` on enter. */
+.reveal {
+  opacity: 0;
+  transform: translateY(26px);
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: opacity, transform;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -149,6 +164,12 @@ body {
   }
   .hover-lift:hover {
     transform: none;
+  }
+  .reveal,
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }
 

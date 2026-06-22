@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireUser } from "@/lib/auth/server";
+import { requireWorkspace } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
 import {
@@ -50,7 +50,8 @@ export type InvoiceDraftInput = z.input<typeof draftSchema>;
 export async function createDraftInvoiceAction(
   input: InvoiceDraftInput,
 ): Promise<InvoiceFormState> {
-  const user = await requireUser();
+  const { user, orgId, can } = await requireWorkspace();
+  if (!can("invoice", "create")) return { error: "You don't have permission to create invoices." };
 
   const parsed = draftSchema.safeParse(input);
   if (!parsed.success) {
@@ -59,7 +60,7 @@ export async function createDraftInvoiceAction(
   const data = parsed.data;
 
   const owned = await db.query.client.findFirst({
-    where: and(eq(client.id, data.clientId), eq(client.userId, user.id)),
+    where: and(eq(client.id, data.clientId), eq(client.organizationId, orgId)),
   });
   if (!owned) return { error: "That client doesn't exist." };
 
@@ -87,12 +88,12 @@ export async function createDraftInvoiceAction(
 
   const invoiceId = await db.transaction(async (tx) => {
     const profile = await tx.query.businessProfile.findFirst({
-      where: eq(businessProfile.userId, user.id),
+      where: eq(businessProfile.organizationId, orgId),
     });
     if (!profile) throw new Error("Missing business profile.");
 
     const cust = await tx.query.client.findFirst({
-      where: and(eq(client.id, data.clientId), eq(client.userId, user.id)),
+      where: and(eq(client.id, data.clientId), eq(client.organizationId, orgId)),
     });
     if (!cust) throw new Error("Client not found.");
 
@@ -101,7 +102,7 @@ export async function createDraftInvoiceAction(
       await tx
         .update(businessProfile)
         .set({ nextClientSeq: clientNumber + 1 })
-        .where(eq(businessProfile.userId, user.id));
+        .where(eq(businessProfile.organizationId, orgId));
     }
     const seq = cust.nextInvoiceSeq;
     await tx
@@ -115,6 +116,7 @@ export async function createDraftInvoiceAction(
     await tx.insert(invoice).values({
       id,
       userId: user.id,
+      organizationId: orgId,
       clientId: data.clientId,
       number,
       currency: data.currency,
@@ -157,9 +159,9 @@ export async function createDraftInvoiceAction(
 
 export type InvoiceActionState = { error?: string };
 
-async function ownedInvoice(userId: string, id: string) {
+async function ownedInvoice(orgId: string, id: string) {
   return db.query.invoice.findFirst({
-    where: and(eq(invoice.id, id), eq(invoice.userId, userId)),
+    where: and(eq(invoice.id, id), eq(invoice.organizationId, orgId)),
   });
 }
 
@@ -171,8 +173,9 @@ function revalidateInvoice(id: string) {
 
 /** Send a draft: status -> sent, email the client, kick off durable reminders. */
 export async function sendInvoiceAction(id: string): Promise<InvoiceActionState> {
-  const user = await requireUser();
-  const inv = await ownedInvoice(user.id, id);
+  const { user, orgId, can } = await requireWorkspace();
+  if (!can("invoice", "send")) return { error: "You don't have permission to send invoices." };
+  const inv = await ownedInvoice(orgId, id);
   if (!inv) return { error: "Invoice not found." };
   if (inv.status !== "draft") return { error: "This invoice has already been sent." };
 
@@ -180,7 +183,7 @@ export async function sendInvoiceAction(id: string): Promise<InvoiceActionState>
   // Freeze the current business theme onto the invoice: from here it's what the
   // client saw, immune to later design changes.
   const profile = await db.query.businessProfile.findFirst({
-    where: eq(businessProfile.userId, user.id),
+    where: eq(businessProfile.organizationId, orgId),
   });
   const snapshot = parseTheme(profile?.theme);
   await db.transaction(async (tx) => {
@@ -219,8 +222,9 @@ export async function sendInvoiceAction(id: string): Promise<InvoiceActionState>
 
 /** Manually mark an invoice paid (e.g. paid by bank transfer). Cancels reminders. */
 export async function markPaidAction(id: string): Promise<InvoiceActionState> {
-  const user = await requireUser();
-  const inv = await ownedInvoice(user.id, id);
+  const { orgId, can } = await requireWorkspace();
+  if (!can("invoice", "markPaid")) return { error: "You don't have permission to do that." };
+  const inv = await ownedInvoice(orgId, id);
   if (!inv) return { error: "Invoice not found." };
   if (inv.status === "paid") return {};
   if (inv.status !== "sent" && inv.status !== "viewed") {
@@ -255,8 +259,9 @@ export async function markPaidAction(id: string): Promise<InvoiceActionState> {
 
 /** Void an invoice (draft/sent/viewed -> void). Cancels reminders. */
 export async function voidInvoiceAction(id: string): Promise<InvoiceActionState> {
-  const user = await requireUser();
-  const inv = await ownedInvoice(user.id, id);
+  const { orgId, can } = await requireWorkspace();
+  if (!can("invoice", "void")) return { error: "You don't have permission to void invoices." };
+  const inv = await ownedInvoice(orgId, id);
   if (!inv) return { error: "Invoice not found." };
   if (inv.status === "void") return {};
   if (inv.status === "paid") return { error: "A paid invoice can't be voided." };

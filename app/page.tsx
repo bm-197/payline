@@ -4,6 +4,7 @@ import { StatusChip } from "@/components/ui/chip";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Logo } from "@/components/ui/logo";
 import { MoneyText } from "@/components/ui/money-text";
+import { Reveal } from "@/components/ui/reveal";
 
 export default function LandingPage() {
   return (
@@ -12,12 +13,24 @@ export default function LandingPage() {
       <SiteHeader />
       <main>
         <Hero />
-        <Trust />
-        <HowItWorks />
-        <Features />
-        <Pricing />
-        <Faq />
-        <FinalCta />
+        <Reveal>
+          <Trust />
+        </Reveal>
+        <Reveal>
+          <HowItWorks />
+        </Reveal>
+        <Reveal>
+          <Features />
+        </Reveal>
+        <Reveal>
+          <Pricing />
+        </Reveal>
+        <Reveal>
+          <Faq />
+        </Reveal>
+        <Reveal>
+          <FinalCta />
+        </Reveal>
       </main>
       <Footer
         name="Payline"
@@ -64,18 +77,25 @@ export default function LandingPage() {
 
 function Backdrop() {
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[820px]">
-      <div className="absolute -left-32 top-0 h-96 w-96 rounded-full bg-peri-deep/40 blur-3xl" />
-      <div className="absolute -right-24 top-24 h-96 w-96 rounded-full bg-blush-deep/35 blur-3xl" />
-      <div className="absolute left-1/3 top-[420px] h-80 w-80 rounded-full bg-sage-deep/25 blur-3xl" />
+    <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[620px]">
+      <div className="absolute left-1/2 top-[-40px] h-72 w-[680px] -translate-x-1/2 rounded-full bg-peri-deep/25 blur-[110px]" />
     </div>
   );
 }
 
 const primaryBtn =
-  "rounded-xl bg-linear-to-b from-zinc-800 to-black px-5 py-3 text-sm font-medium text-white shadow-xl shadow-zinc-900/20 transition motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98]";
+  "rounded-full bg-linear-to-b from-zinc-800 to-black px-6 py-3 text-sm font-medium text-white shadow-xl shadow-zinc-900/20 transition motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98]";
 const secondaryBtn =
-  "rounded-xl border border-line bg-card px-5 py-3 text-sm font-medium text-ink shadow-sm transition hover:bg-canvas";
+  "rounded-full border border-line bg-card px-6 py-3 text-sm font-medium text-ink shadow-sm transition hover:bg-canvas";
+
+// Per Diem-style eyebrow: a bordered uppercase pill with wide tracking.
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex w-fit items-center rounded-full border border-line px-3 py-1 font-geist text-[0.7rem] font-medium uppercase tracking-[0.18em] text-muted">
+      {children}
+    </span>
+  );
+}
 
 function SiteHeader() {
   return (
@@ -118,17 +138,15 @@ function SiteHeader() {
 
 function Hero() {
   return (
-    <section className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
+    <section className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 lg:grid-cols-[1.05fr_0.95fr] lg:py-28">
       <div>
-        <p className="font-geist text-xs uppercase tracking-widest text-faint">
-          Invoicing for freelancers
-        </p>
-        <h1 className="ink-gradient mt-4 text-4xl font-semibold tracking-tight sm:text-5xl lg:text-[3.4rem]">
+        <Eyebrow>Invoicing for freelancers</Eyebrow>
+        <h1 className="ink-gradient mt-5 text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
           Get paid without the <span className="font-serif italic">awkward follow-up.</span>
         </h1>
-        <p className="mt-5 max-w-md text-lg text-muted">
-          Payline turns a few line items into a branded invoice, a hosted page your client pays by
-          card, and gentle reminders that do the chasing. So you can get back to the work.
+        <p className="mt-5 max-w-md text-muted">
+          A few line items become a branded invoice, a page your client pays by card, and reminders
+          that chase for you.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <Link href="/signup" className={primaryBtn}>
@@ -224,8 +242,8 @@ function Trust() {
     },
   ];
   return (
-    <section className="border-y border-line bg-card/50">
-      <div className="mx-auto grid max-w-6xl gap-8 px-6 py-10 sm:grid-cols-3">
+    <section className="border-y border-line/70">
+      <div className="mx-auto grid max-w-6xl gap-8 px-6 py-12 sm:grid-cols-3">
         {items.map((i) => (
           <div key={i.k}>
             <p className="font-medium">{i.k}</p>
@@ -267,9 +285,9 @@ function HowItWorks() {
         title="From blank page to paid"
         accent="in four steps."
       />
-      <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-12 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
         {steps.map((s) => (
-          <div key={s.n} className="rounded-3xl border border-line bg-card p-6">
+          <div key={s.n} className="border-t border-line/70 pt-5">
             <p className="font-geist text-sm font-medium text-faint">{s.n}</p>
             <p className="mt-3 font-medium">{s.t}</p>
             <p className="mt-1.5 text-sm text-muted">{s.b}</p>
@@ -282,8 +300,8 @@ function HowItWorks() {
 
 function Features() {
   return (
-    <section id="features" className="scroll-mt-20 border-t border-line bg-card/40">
-      <div className="mx-auto max-w-6xl space-y-20 px-6 py-20">
+    <section id="features" className="scroll-mt-20 border-t border-line/70">
+      <div className="mx-auto max-w-6xl space-y-20 px-6 py-24">
         <SectionHeading
           eyebrow="Features"
           title="Everything between the work"
@@ -293,7 +311,7 @@ function Features() {
         <FeatureRow
           tint="peri"
           title="A page your client actually wants to open."
-          body="The hosted invoice is the most beautiful thing in the app for a reason. Branded header, clean line items, a prominent Pay button, and a calm paid state. It looks great on a phone, and downloads as a matching PDF."
+          body="Branded header, clean line items, a prominent Pay button, a calm paid state. Great on a phone, and it downloads as a matching PDF."
           bullets={[
             "Tokenized link, no client login",
             "PDF matches the page exactly",
@@ -306,7 +324,7 @@ function Features() {
           reverse
           tint="sage"
           title="Money math you can trust."
-          body="Every amount is an integer in the currency's smallest unit, never a float. Tax and discounts round once at the invoice level, the same way Stripe and the pros do it. The totals are correct to the cent, every time."
+          body="Every amount is an integer in the currency's smallest unit, never a float. Tax and discounts round once, the way the pros do it. Correct to the cent, every time."
           bullets={[
             "Multi-currency per invoice",
             "Per-invoice tax and discount",
@@ -318,7 +336,7 @@ function Features() {
         <FeatureRow
           tint="blush"
           title="Reminders that know when to stop."
-          body="Schedule polite nudges before and after the due date. They send themselves, they never double up, and the moment an invoice is paid or voided they go quiet. No more chasing, no more awkward emails."
+          body="Schedule polite nudges around the due date. They send themselves, never double up, and go quiet the moment it's paid."
           bullets={[
             "Configurable schedule",
             "Exactly one per slot, never twice",
@@ -349,8 +367,8 @@ function FeatureRow({
   return (
     <div className="grid items-center gap-10 lg:grid-cols-2">
       <div className={reverse ? "lg:order-2" : undefined}>
-        <h3 className="text-2xl font-semibold tracking-tight">{title}</h3>
-        <p className="mt-3 text-muted">{body}</p>
+        <h3 className="text-xl font-semibold tracking-tight">{title}</h3>
+        <p className="mt-3 text-sm text-muted">{body}</p>
         <ul className="mt-5 space-y-2 text-sm">
           {bullets.map((b) => (
             <li key={b} className="flex items-center gap-2.5">
@@ -453,9 +471,9 @@ function Pricing() {
       <SectionHeading eyebrow="Pricing" title="Simple, and only when you" accent="get paid." />
       <div className="mt-12 grid items-center gap-8 lg:grid-cols-[1fr_1.1fr]">
         <div>
-          <p className="text-muted">
-            No monthly fee, no per-seat pricing, no setup cost. Payline takes a flat 1% when an
-            invoice is actually paid. If you don't get paid, you don't pay.
+          <p className="text-sm text-muted">
+            No monthly fee, no setup cost. A flat 1% when an invoice is paid. If you don't get paid,
+            you don't pay.
           </p>
           <ul className="mt-6 space-y-2.5 text-sm">
             {[
@@ -477,7 +495,7 @@ function Pricing() {
           <p className="mt-1 text-sm text-ink/70">per paid invoice. Free to start.</p>
           <Link
             href="/signup"
-            className="mt-6 block rounded-xl bg-ink px-5 py-3 text-center text-sm font-medium text-white transition motion-safe:hover:scale-[1.01]"
+            className="mt-6 block rounded-full bg-ink px-6 py-3 text-center text-sm font-medium text-white transition motion-safe:hover:scale-[1.01]"
           >
             Create your account
           </Link>
@@ -510,8 +528,8 @@ function Faq() {
     },
   ];
   return (
-    <section id="faq" className="scroll-mt-20 border-t border-line bg-card/40">
-      <div className="mx-auto max-w-3xl px-6 py-20">
+    <section id="faq" className="scroll-mt-20 border-t border-line/70">
+      <div className="mx-auto max-w-3xl px-6 py-24">
         <SectionHeading eyebrow="FAQ" title="The questions freelancers" accent="actually ask." />
         <div className="mt-10 divide-y divide-line">
           {qs.map((item) => (
@@ -528,18 +546,18 @@ function Faq() {
 
 function FinalCta() {
   return (
-    <section className="mx-auto max-w-6xl px-6 py-20">
-      <GlassCard className="flex flex-col items-center gap-5 px-6 py-14 text-center">
-        <h2 className="ink-gradient text-3xl font-semibold tracking-tight sm:text-4xl">
-          Bill your first client <span className="font-serif italic">today.</span>
-        </h2>
-        <p className="max-w-md text-muted">
-          Set up your business in a couple of minutes and send an invoice that gets paid.
-        </p>
+    <section className="mx-auto max-w-2xl px-6 py-24 text-center">
+      <h2 className="ink-gradient text-2xl font-semibold tracking-tight sm:text-3xl">
+        Bill your first client <span className="font-serif italic">today.</span>
+      </h2>
+      <p className="mx-auto mt-4 max-w-md text-sm text-muted">
+        Set up your business in a couple of minutes and send an invoice that gets paid.
+      </p>
+      <div className="mt-7 flex justify-center">
         <Link href="/signup" className={primaryBtn}>
           Start for free
         </Link>
-      </GlassCard>
+      </div>
     </section>
   );
 }
@@ -555,8 +573,8 @@ function SectionHeading({
 }) {
   return (
     <div className="max-w-xl">
-      <p className="font-geist text-xs uppercase tracking-widest text-faint">{eyebrow}</p>
-      <h2 className="ink-gradient mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+      <Eyebrow>{eyebrow}</Eyebrow>
+      <h2 className="ink-gradient mt-4 text-2xl font-semibold tracking-tight sm:text-3xl">
         {title} <span className="font-serif italic">{accent}</span>
       </h2>
     </div>

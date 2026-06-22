@@ -43,7 +43,11 @@ export async function runReminderSlot(reminderId: string): Promise<ReminderOutco
 
   const [cust, profile] = await Promise.all([
     db.query.client.findFirst({ where: eq(client.id, inv.clientId) }),
-    db.query.businessProfile.findFirst({ where: eq(businessProfile.userId, inv.userId) }),
+    db.query.businessProfile.findFirst({
+      where: inv.organizationId
+        ? eq(businessProfile.organizationId, inv.organizationId)
+        : eq(businessProfile.userId, inv.userId),
+    }),
   ]);
 
   if (cust?.email) {

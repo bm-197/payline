@@ -5,12 +5,12 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { TableKeyboardNav } from "@/components/ui/table-keyboard-nav";
-import { requireUser } from "@/lib/auth/server";
+import { requireWorkspace } from "@/lib/auth/server";
 import { listClients } from "@/lib/clients/queries";
 
 export default async function ClientsPage() {
-  const user = await requireUser();
-  const clients = await listClients(user.id);
+  const { orgId } = await requireWorkspace();
+  const clients = await listClients(orgId);
 
   return (
     <div>

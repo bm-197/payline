@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { requireUser } from "@/lib/auth/server";
+import { requireWorkspace } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
 import { businessProfile, client } from "@/lib/db/schema";
@@ -43,7 +43,8 @@ export async function createClientAction(
   _prev: ClientFormState,
   formData: FormData,
 ): Promise<ClientFormState> {
-  const user = await requireUser();
+  const { user, orgId, can } = await requireWorkspace();
+  if (!can("client", "create")) return { error: "You don't have permission to add clients." };
   const parsed = parse(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
@@ -51,18 +52,19 @@ export async function createClientAction(
 
   await db.transaction(async (tx) => {
     const profile = await tx.query.businessProfile.findFirst({
-      where: eq(businessProfile.userId, user.id),
+      where: eq(businessProfile.organizationId, orgId),
     });
     const clientNumber = profile?.nextClientSeq ?? 1001;
     if (profile) {
       await tx
         .update(businessProfile)
         .set({ nextClientSeq: clientNumber + 1 })
-        .where(eq(businessProfile.userId, user.id));
+        .where(eq(businessProfile.organizationId, orgId));
     }
     await tx.insert(client).values({
       id: newId("client"),
       userId: user.id,
+      organizationId: orgId,
       clientNumber,
       ...toValues(parsed.data),
     });
@@ -77,7 +79,8 @@ export async function updateClientAction(
   _prev: ClientFormState,
   formData: FormData,
 ): Promise<ClientFormState> {
-  const user = await requireUser();
+  const { orgId, can } = await requireWorkspace();
+  if (!can("client", "update")) return { error: "You don't have permission to edit clients." };
   const parsed = parse(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Please check the form." };
@@ -86,14 +89,15 @@ export async function updateClientAction(
   await db
     .update(client)
     .set(toValues(parsed.data))
-    .where(and(eq(client.id, id), eq(client.userId, user.id)));
+    .where(and(eq(client.id, id), eq(client.organizationId, orgId)));
 
   revalidatePath("/clients");
   redirect("/clients");
 }
 
 export async function deleteClientAction(id: string) {
-  const user = await requireUser();
-  await db.delete(client).where(and(eq(client.id, id), eq(client.userId, user.id)));
+  const { orgId, can } = await requireWorkspace();
+  if (!can("client", "delete")) return;
+  await db.delete(client).where(and(eq(client.id, id), eq(client.organizationId, orgId)));
   revalidatePath("/clients");
 }

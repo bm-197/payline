@@ -14,10 +14,10 @@ export { APPLICATION_FEE_BPS, applicationFee } from "./fee";
  * destination charge can route to them; Stripe pays out their balance to bank.
  */
 
-/** Get the freelancer's connected v2 account id, creating it on first use. */
-export async function getOrCreateConnectedAccount(userId: string, email?: string): Promise<string> {
+/** Get the team's connected v2 account id, creating it on first use. */
+export async function getOrCreateConnectedAccount(orgId: string, email?: string): Promise<string> {
   const profile = await db.query.businessProfile.findFirst({
-    where: eq(businessProfile.userId, userId),
+    where: eq(businessProfile.organizationId, orgId),
   });
   if (profile?.stripeAccountId) return profile.stripeAccountId;
 
@@ -48,7 +48,7 @@ export async function getOrCreateConnectedAccount(userId: string, email?: string
   await db
     .update(businessProfile)
     .set({ stripeAccountId: account.id })
-    .where(eq(businessProfile.userId, userId));
+    .where(eq(businessProfile.organizationId, orgId));
   return account.id;
 }
 
@@ -73,9 +73,9 @@ export async function createOnboardingLink(accountId: string): Promise<string> {
  * Pull live readiness from Stripe and cache it. "Ready" means the recipient can
  * receive a destination charge, i.e. the stripe_transfers capability is active.
  */
-export async function refreshAccountStatus(userId: string): Promise<boolean> {
+export async function refreshAccountStatus(orgId: string): Promise<boolean> {
   const profile = await db.query.businessProfile.findFirst({
-    where: eq(businessProfile.userId, userId),
+    where: eq(businessProfile.organizationId, orgId),
   });
   if (!profile?.stripeAccountId) return false;
 
@@ -90,7 +90,7 @@ export async function refreshAccountStatus(userId: string): Promise<boolean> {
     await db
       .update(businessProfile)
       .set({ stripeChargesEnabled: enabled })
-      .where(eq(businessProfile.userId, userId));
+      .where(eq(businessProfile.organizationId, orgId));
   }
   return enabled;
 }

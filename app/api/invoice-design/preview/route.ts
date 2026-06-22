@@ -1,7 +1,7 @@
 import { renderToBuffer } from "@react-pdf/renderer";
 import { eq } from "drizzle-orm";
 import { createElement } from "react";
-import { requireUser } from "@/lib/auth/server";
+import { requireWorkspace } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import type { BusinessProfile, Client, Invoice, LineItem } from "@/lib/db/schema";
 import { businessProfile } from "@/lib/db/schema";
@@ -12,13 +12,13 @@ import { InvoiceDocument } from "@/lib/pdf/invoice-pdf";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  const user = await requireUser();
+  const { orgId } = await requireWorkspace();
   const body = await req.json().catch(() => null);
   const parsed = themeSchema.safeParse(body?.theme);
   if (!parsed.success) return new Response("Invalid theme", { status: 400 });
 
   const profile = await db.query.businessProfile.findFirst({
-    where: eq(businessProfile.userId, user.id),
+    where: eq(businessProfile.organizationId, orgId),
   });
   const s = sampleInvoice(profile?.businessName ?? "Your business", profile?.address ?? null);
 

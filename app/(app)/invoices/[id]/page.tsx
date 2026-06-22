@@ -4,7 +4,7 @@ import { StatusChip } from "@/components/ui/chip";
 import { CopyButton } from "@/components/ui/copy-button";
 import { MoneyText } from "@/components/ui/money-text";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { requireUser } from "@/lib/auth/server";
+import { requireWorkspace } from "@/lib/auth/server";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { getInvoiceDetail } from "@/lib/invoices/queries";
 import { displayStatus } from "@/lib/invoices/state";
@@ -21,8 +21,8 @@ const activityLabels: Record<string, string> = {
 
 export default async function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await requireUser();
-  const detail = await getInvoiceDetail(user.id, id);
+  const { orgId, can } = await requireWorkspace();
+  const detail = await getInvoiceDetail(orgId, id);
   if (!detail) notFound();
 
   const { invoice: inv, lines, activity, client } = detail;
@@ -119,7 +119,16 @@ export default async function InvoiceDetailPage({ params }: { params: Promise<{ 
       <aside className="space-y-6">
         <div className="rounded-3xl border border-line bg-card p-5">
           <p className="mb-3 text-xs font-medium uppercase tracking-wide text-faint">Actions</p>
-          <InvoiceActions id={inv.id} status={inv.status} token={inv.publicToken} />
+          <InvoiceActions
+            id={inv.id}
+            status={inv.status}
+            token={inv.publicToken}
+            can={{
+              send: can("invoice", "send"),
+              markPaid: can("invoice", "markPaid"),
+              void: can("invoice", "void"),
+            }}
+          />
         </div>
 
         <div className="rounded-3xl border border-line bg-card p-5">

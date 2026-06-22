@@ -57,6 +57,27 @@
       "when": 1782060240056,
       "tag": "0007_outstanding_echo",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782154695993,
+      "tag": "0008_green_timeslip",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1782157314978,
+      "tag": "0009_wonderful_sinister_six",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1782158269323,
+      "tag": "0010_mighty_dark_beast",
+      "breakpoints": true
     }
   ]
 }

@@ -59,7 +59,11 @@ async function assemble(inv: typeof invoice.$inferSelect) {
       orderBy: [asc(lineItem.position)],
     }),
     db.query.client.findFirst({ where: eq(client.id, inv.clientId) }),
-    db.query.businessProfile.findFirst({ where: eq(businessProfile.userId, inv.userId) }),
+    db.query.businessProfile.findFirst({
+      where: inv.organizationId
+        ? eq(businessProfile.organizationId, inv.organizationId)
+        : eq(businessProfile.userId, inv.userId),
+    }),
   ]);
 
   return { invoice: inv, lines, client: cust ?? null, business: business ?? null };

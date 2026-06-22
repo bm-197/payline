@@ -1,17 +1,23 @@
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { LayoutDashboard, Palette, ReceiptText, Settings, Users } from "lucide-react";
 import { cookies } from "next/headers";
 import { CommandPalette } from "@/components/command-palette";
 import { Sidebar } from "@/components/sidebar";
 import { Logo } from "@/components/ui/logo";
-import { requireUser } from "@/lib/auth/server";
+import { requireWorkspace } from "@/lib/auth/server";
 import { db } from "@/lib/db";
-import { businessProfile } from "@/lib/db/schema";
+import { businessProfile, member, organization } from "@/lib/db/schema";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const user = await requireUser();
-  const [profile, cookieStore] = await Promise.all([
-    db.query.businessProfile.findFirst({ where: eq(businessProfile.userId, user.id) }),
+  const { user, orgId } = await requireWorkspace();
+  const [profile, teams, cookieStore] = await Promise.all([
+    db.query.businessProfile.findFirst({ where: eq(businessProfile.organizationId, orgId) }),
+    db
+      .select({ id: organization.id, name: organization.name })
+      .from(member)
+      .innerJoin(organization, eq(organization.id, member.organizationId))
+      .where(eq(member.userId, user.id))
+      .orderBy(asc(organization.name)),
     cookies(),
   ]);
   const collapsed = cookieStore.get("payline-sidebar")?.value === "collapsed";
@@ -49,6 +55,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           },
         ]}
         user={{ name: user.name || "Your account", sublabel: profile?.businessName }}
+        teams={teams}
+        activeTeamId={orgId}
       >
         {children}
       </Sidebar>

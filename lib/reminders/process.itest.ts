@@ -7,10 +7,19 @@ vi.mock("@/lib/email", () => ({ getMailer: () => ({ name: "test", send: h.send }
 
 import { db } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
-import { businessProfile, client, invoice, invoiceActivity, reminder, user } from "@/lib/db/schema";
+import {
+  businessProfile,
+  client,
+  invoice,
+  invoiceActivity,
+  organization,
+  reminder,
+  user,
+} from "@/lib/db/schema";
 import { runReminderSlot } from "@/lib/reminders/process";
 
 const userId = "usr_itest_rem000";
+const orgId = "org_itest_rem000";
 let openInvoiceId = "";
 let paidInvoiceId = "";
 let openReminderId = "";
@@ -21,6 +30,7 @@ async function makeInvoice(status: "sent" | "paid", clientId: string) {
   await db.insert(invoice).values({
     id,
     userId,
+    organizationId: orgId,
     clientId,
     number: `INV-${status === "paid" ? "RP" : "RO"}1`,
     currency: "USD",
@@ -47,14 +57,20 @@ async function makeReminder(invoiceId: string) {
 describe("runReminderSlot (integration, hits dev DB)", () => {
   beforeAll(async () => {
     await db.delete(user).where(eq(user.id, userId));
+    await db.delete(organization).where(eq(organization.id, orgId));
+    await db.insert(organization).values({ id: orgId, name: "Rem Co", slug: "team-itest-rem000" });
     await db.insert(user).values({ id: userId, email: "rem@payline.test", name: "Rem" });
     await db
       .insert(businessProfile)
-      .values({ id: newId("business"), userId, businessName: "Rem Co" });
+      .values({ id: newId("business"), userId, organizationId: orgId, businessName: "Rem Co" });
     const clientId = newId("client");
-    await db
-      .insert(client)
-      .values({ id: clientId, userId, name: "Dana", email: "dana@example.com" });
+    await db.insert(client).values({
+      id: clientId,
+      userId,
+      organizationId: orgId,
+      name: "Dana",
+      email: "dana@example.com",
+    });
 
     openInvoiceId = await makeInvoice("sent", clientId);
     paidInvoiceId = await makeInvoice("paid", clientId);
@@ -64,6 +80,7 @@ describe("runReminderSlot (integration, hits dev DB)", () => {
 
   afterAll(async () => {
     await db.delete(user).where(eq(user.id, userId));
+    await db.delete(organization).where(eq(organization.id, orgId));
     await db.$client.end();
   });
 

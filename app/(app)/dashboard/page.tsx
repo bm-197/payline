@@ -7,7 +7,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { MoneyText } from "@/components/ui/money-text";
 import { PageHeader } from "@/components/ui/page-header";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { requireUser } from "@/lib/auth/server";
+import { requireWorkspace } from "@/lib/auth/server";
 import { db } from "@/lib/db";
 import { businessProfile } from "@/lib/db/schema";
 import { formatDate } from "@/lib/format";
@@ -16,10 +16,10 @@ import { displayStatus } from "@/lib/invoices/state";
 import { formatMoney } from "@/lib/money";
 
 export default async function DashboardPage() {
-  const user = await requireUser();
+  const { user, orgId } = await requireWorkspace();
   const [profile, invoices] = await Promise.all([
-    db.query.businessProfile.findFirst({ where: eq(businessProfile.userId, user.id) }),
-    listInvoices(user.id),
+    db.query.businessProfile.findFirst({ where: eq(businessProfile.organizationId, orgId) }),
+    listInvoices(orgId),
   ]);
 
   const now = new Date();
