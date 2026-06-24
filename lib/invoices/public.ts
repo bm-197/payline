@@ -60,9 +60,7 @@ async function assemble(inv: typeof invoice.$inferSelect) {
     }),
     db.query.client.findFirst({ where: eq(client.id, inv.clientId) }),
     db.query.businessProfile.findFirst({
-      where: inv.organizationId
-        ? eq(businessProfile.organizationId, inv.organizationId)
-        : eq(businessProfile.userId, inv.userId),
+      where: eq(businessProfile.organizationId, inv.organizationId),
     }),
   ]);
 

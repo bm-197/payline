@@ -46,9 +46,7 @@ export const sendInvoiceReminders = inngest.createFunction(
       }
 
       const profile = await db.query.businessProfile.findFirst({
-        where: inv.organizationId
-          ? eq(businessProfile.organizationId, inv.organizationId)
-          : eq(businessProfile.userId, inv.userId),
+        where: eq(businessProfile.organizationId, inv.organizationId),
       });
       const offsets = profile?.reminderOffsetDays ?? [-3, 0, 3];
       const built = buildReminderSchedule(new Date(inv.dueDate), offsets, inv.sentAt ?? new Date());
