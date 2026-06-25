@@ -53,7 +53,7 @@ export function TeamMembers({
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold tracking-tight">Team</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Members</h2>
         <p className="text-sm text-muted">
           People with access to this team's invoices and clients.
         </p>

@@ -1,22 +1,29 @@
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { ConnectPayments } from "@/components/settings/connect-payments";
 import { SettingsForm } from "@/components/settings/settings-form";
+import { TeamManage } from "@/components/team-manage";
 import { TeamMembers } from "@/components/team-members";
 import { PageHeader } from "@/components/ui/page-header";
 import { auth } from "@/lib/auth";
 import { requireWorkspace } from "@/lib/auth/server";
 import { db } from "@/lib/db";
-import { businessProfile } from "@/lib/db/schema";
+import { businessProfile, member, organization } from "@/lib/db/schema";
 import { formatTaxRate } from "@/lib/money";
 import { updateBusinessProfileAction } from "@/lib/settings/actions";
 import { refreshAccountStatus } from "@/lib/stripe/connect";
 
 export default async function SettingsPage() {
   const { user, orgId, role } = await requireWorkspace();
-  const [profile, fullOrg] = await Promise.all([
+  const [profile, fullOrg, teams] = await Promise.all([
     db.query.businessProfile.findFirst({ where: eq(businessProfile.organizationId, orgId) }),
     auth.api.getFullOrganization({ headers: await headers() }),
+    db
+      .select({ id: organization.id, name: organization.name })
+      .from(member)
+      .innerJoin(organization, eq(organization.id, member.organizationId))
+      .where(eq(member.userId, user.id))
+      .orderBy(asc(organization.name)),
   ]);
   const members = (fullOrg?.members ?? []).map((m) => ({
     id: m.id,
@@ -56,6 +63,12 @@ export default async function SettingsPage() {
           paymentTermsDays: profile?.paymentTermsDays ?? 14,
           offsets: profile?.reminderOffsetDays ?? [-3, 0, 3],
         }}
+      />
+      <TeamManage
+        teams={teams}
+        activeTeamId={orgId}
+        canManage={canManage}
+        isOwner={role === "owner"}
       />
       <TeamMembers
         members={members}
